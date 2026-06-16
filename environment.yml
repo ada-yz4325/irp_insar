@@ -1,7 +1,7 @@
 name: insar
 channels:
   - conda-forge
-  - defaults
+  - nodefaults
 
 dependencies:
   # Core scientific stack
@@ -28,10 +28,8 @@ dependencies:
   - mintpy          # time-series InSAR analysis
   - isce2           # SAR interferometry engine (conda-forge)
   - snaphu          # phase unwrapping
-  - dem_isce        # DEM download helper
 
   # Data download
-  - asf-search      # Alaska Satellite Facility search API
   - sentinelsat     # Copernicus Open Access Hub API
 
   # Time-series / forecasting
@@ -48,3 +46,4 @@ dependencies:
 
   - pip:
       - aria2p       # fast parallel download manager
+      - asf-search   # Alaska Satellite Facility search API

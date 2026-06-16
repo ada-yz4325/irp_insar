@@ -8,8 +8,13 @@
 set -euo pipefail
 cd "$PBS_O_WORKDIR"
 
-module load anaconda3/personal
+source $HOME/miniconda3/etc/profile.d/conda.sh
 conda activate insar
+export ISCE_HOME=$HOME/miniconda3/envs/insar/lib/python3.10/site-packages/isce
+export TOPSSTACK=$HOME/isce2_contrib/contrib/stack/topsStack
+export PATH=$ISCE_HOME/bin:$ISCE_HOME/applications:$TOPSSTACK:$PATH
+export STACK_CONTRIB=$HOME/isce2_contrib/contrib/stack
+export PYTHONPATH=$ISCE_HOME:$STACK_CONTRIB:$PYTHONPATH
 
 echo "=== MintPy job start: $(date) ==="
 bash scripts/mintpy/run_mintpy.sh \
