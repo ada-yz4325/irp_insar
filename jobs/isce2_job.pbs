@@ -1,0 +1,16 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=16:mem=64gb
+#PBS -l walltime=24:00:00
+#PBS -N isce2_topsStack
+#PBS -o logs/isce2_job.out
+#PBS -e logs/isce2_job.err
+
+set -euo pipefail
+cd "$PBS_O_WORKDIR"
+
+module load anaconda3/personal
+conda activate insar
+
+echo "=== ISCE2 job start: $(date) ==="
+bash scripts/isce2/run_topsStack.sh configs/isce2/topsStack_template.cfg
+echo "=== ISCE2 job end: $(date) ==="

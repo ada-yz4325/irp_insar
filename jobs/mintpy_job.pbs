@@ -1,0 +1,18 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=8:mem=32gb
+#PBS -l walltime=12:00:00
+#PBS -N mintpy_sbas
+#PBS -o logs/mintpy_job.out
+#PBS -e logs/mintpy_job.err
+
+set -euo pipefail
+cd "$PBS_O_WORKDIR"
+
+module load anaconda3/personal
+conda activate insar
+
+echo "=== MintPy job start: $(date) ==="
+bash scripts/mintpy/run_mintpy.sh \
+    configs/mintpy/smallbaselineApp_template.cfg \
+    data/mintpy_outputs
+echo "=== MintPy job end: $(date) ==="

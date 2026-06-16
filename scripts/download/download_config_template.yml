@@ -1,0 +1,24 @@
+# Sentinel-1 download configuration
+# Copy this file, fill in your values, and pass to download_s1.py
+
+earthdata_user:     YOUR_USERNAME
+earthdata_password: YOUR_PASSWORD
+
+# Study area — Himalayan AOI (WKT or bbox)
+# bbox format: "lon_min lat_min lon_max lat_max"
+aoi: "POLYGON((85.0 27.5, 87.0 27.5, 87.0 29.0, 85.0 29.0, 85.0 27.5))"
+
+# Date range
+start: "2018-01-01"
+end:   "2023-12-31"
+
+# Sentinel-1 track
+track: 85          # relative orbit number — check ASF vertex for your AOI
+
+# Orbit direction
+pass_dir: ASCENDING  # ASCENDING | DESCENDING
+
+# Output directory
+out_dir: ../../data/raw/slc
+
+max_results: 200

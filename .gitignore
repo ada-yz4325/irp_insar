@@ -1,0 +1,50 @@
+# Data — never commit raw SLC or large products
+data/raw/
+data/processed/
+data/mintpy_outputs/
+
+# Results
+results/interferograms/
+results/timeseries/
+results/velocity/
+results/forecasts/
+
+# Figures (generated)
+figures/*.png
+figures/*.pdf
+figures/*.eps
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+*.so
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb~
+
+# Conda / virtualenv
+.env
+.venv
+env/
+
+# ISCE2 intermediates
+*.int
+*.cor
+*.unw
+*.slc
+*.rsc
+*.xml
+*.vrt
+*.h5~
+
+# MintPy temp
+pic/
+inputs/ERA5/
+
+# macOS
+.DS_Store

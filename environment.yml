@@ -1,0 +1,50 @@
+name: insar
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Core scientific stack
+  - python=3.10
+  - numpy
+  - scipy
+  - matplotlib
+  - pandas
+  - xarray
+  - netcdf4
+  - h5py
+  - gdal
+  - rasterio
+  - pyproj
+  - shapely
+  - geopandas
+
+  # Jupyter
+  - jupyterlab
+  - ipywidgets
+  - ipympl
+
+  # InSAR / remote sensing
+  - mintpy          # time-series InSAR analysis
+  - isce2           # SAR interferometry engine (conda-forge)
+  - snaphu          # phase unwrapping
+  - dem_isce        # DEM download helper
+
+  # Data download
+  - asf-search      # Alaska Satellite Facility search API
+  - sentinelsat     # Copernicus Open Access Hub API
+
+  # Time-series / forecasting
+  - statsmodels     # ARIMA
+  - scikit-learn
+  - pytorch         # LSTM + Transformer
+  - pytorch-lightning
+
+  # Utilities
+  - tqdm
+  - pyyaml
+  - click
+  - pip
+
+  - pip:
+      - aria2p       # fast parallel download manager
