@@ -27,6 +27,9 @@ build/
 .ipynb_checkpoints/
 *.ipynb~
 
+# Download config with real AOI/dates (copy of template, not the template itself)
+scripts/download/download_config.yml
+
 # Conda / virtualenv
 .env
 .venv
