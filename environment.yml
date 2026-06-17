@@ -47,3 +47,4 @@ dependencies:
   - pip:
       - aria2p       # fast parallel download manager
       - asf-search   # Alaska Satellite Facility search API
+      - sentineleof  # Sentinel-1 precise orbit file downloader (uses ASF/EarthData auth)
