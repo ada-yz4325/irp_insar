@@ -28,6 +28,14 @@ print(c['topsStack']['workDir'])
 ")
 mkdir -p "$WORK_DIR"
 
+# stackSentinel.py refuses to run if run_files/configs already exist from a
+# previous (e.g. --generate-only) invocation. Safe to clear since these are
+# just the generated recipe, not processing output — only remove them if no
+# actual processing has started yet (merged/ is the first heavy-output dir).
+if [[ ! -d "$WORK_DIR/merged" ]]; then
+    rm -rf "$WORK_DIR/run_files" "$WORK_DIR/configs" "$WORK_DIR/SAFE_files.txt"
+fi
+
 echo "--- Generating run_files ---"
 echo "stackSentinel.py $ARGS"
 ( cd "$WORK_DIR" && eval stackSentinel.py "$ARGS" )
