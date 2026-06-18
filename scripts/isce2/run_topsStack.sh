@@ -63,6 +63,12 @@ for run_script in "$WORK_DIR"/run_files/run_*; do
     else
         xargs -P "$NUM_PROC" -I CMD -a "$run_script" bash -c CMD
     fi
+    # Parallel filesystem (Lustre) can briefly lag in making files written by
+    # one worker visible to another right after a heavily-parallel step ends —
+    # this caused a transient FileNotFoundError between run_02 and run_07 in
+    # an earlier run. A sync + short pause is cheap insurance against repeats.
+    sync
+    sleep 5
 done
 
 echo "=== topsStack complete: $(date) ==="
