@@ -42,6 +42,7 @@ dependencies:
   - tqdm
   - pyyaml
   - click
+  - pytest
   - pip
 
   - pip:
