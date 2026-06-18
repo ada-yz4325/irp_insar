@@ -5,10 +5,12 @@
 #PBS -o logs/mintpy_job.out
 #PBS -e logs/mintpy_job.err
 
-set -euo pipefail
+set -eo pipefail
 cd "$PBS_O_WORKDIR"
 
 source $HOME/miniconda3/etc/profile.d/conda.sh
+export ISCE_HOME="${ISCE_HOME:-}"
+export ISCE_STACK="${ISCE_STACK:-}"
 conda activate insar
 export ISCE_HOME=$HOME/miniconda3/envs/insar/lib/python3.10/site-packages/isce
 export TOPSSTACK=$HOME/isce2_contrib/contrib/stack/topsStack

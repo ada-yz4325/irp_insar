@@ -49,5 +49,9 @@ env/
 pic/
 inputs/ERA5/
 
+# PBS job logs (runtime output, not code)
+logs/*.out
+logs/*.err
+
 # macOS
 .DS_Store
