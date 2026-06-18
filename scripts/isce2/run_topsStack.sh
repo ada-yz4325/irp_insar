@@ -47,28 +47,21 @@ if $GENERATE_ONLY; then
     exit 0
 fi
 
-NUM_PROC=$(python -c "
-import configparser
-c = configparser.ConfigParser(inline_comment_prefixes=('#',))
-c.read('$CONFIG')
-print(c['topsStack'].get('numProcess', '8'))
-")
-
-echo "--- Executing run_files in order (each file's lines run in parallel, -P $NUM_PROC) ---"
+# stackSentinel.py's --num_proc already bakes its own parallelism directly
+# into multi-line run_files: commands are batched in groups ending with `&`,
+# each batch followed by a `wait` line. Running each line independently
+# through `xargs -P` (as this script used to) breaks that batching — `wait`
+# becomes a no-op in its own subshell, and each `bash -c "CMD &"` exits the
+# instant it backgrounds CMD instead of waiting for it. That caused two
+# different failures (FileNotFoundError, then IndexError on empty output)
+# in earlier runs. Just run the file directly and let its own &/wait
+# structure do the parallelism.
+echo "--- Executing run_files in order ---"
 for run_script in "$WORK_DIR"/run_files/run_*; do
     n_lines=$(wc -l < "$run_script")
-    echo "--- Running: $run_script ($n_lines commands) ---"
-    if [ "$n_lines" -le 1 ]; then
-        bash "$run_script"
-    else
-        xargs -P "$NUM_PROC" -I CMD -a "$run_script" bash -c CMD
-    fi
-    # Parallel filesystem (Lustre) can briefly lag in making files written by
-    # one worker visible to another right after a heavily-parallel step ends —
-    # this caused a transient FileNotFoundError between run_02 and run_07 in
-    # an earlier run. A sync + short pause is cheap insurance against repeats.
+    echo "--- Running: $run_script ($n_lines lines) ---"
+    bash "$run_script"
     sync
-    sleep 5
 done
 
 echo "=== topsStack complete: $(date) ==="
