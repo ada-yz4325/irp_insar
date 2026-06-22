@@ -21,10 +21,16 @@ export PYTHONPATH=$ISCE_HOME:$STACK_CONTRIB:$PYTHONPATH
 cd /rds/general/user/yz4325/ephemeral/irp_insar/data/processed/isce2/
 
 echo "=== fixing stuck dates, one at a time, on a dedicated compute node: $(date) ==="
-for d in 20211130 20211212 20211224; do
-    echo "--- $d: clearing any partial resample output ---"
-    rm -rf "coreg_secondarys/$d/IW1/burst_"*.slc "coreg_secondarys/$d/IW2/burst_"*.slc "coreg_secondarys/$d/IW3/burst_"*.slc 2>/dev/null || true
-    rm -f "coreg_secondarys/$d"/IW*.xml 2>/dev/null || true
+for d in 20211212 20211224; do
+    echo "--- $d: clearing incomplete geo2rdr + resample output for a clean redo ---"
+    rm -rf "coreg_secondarys/$d"
+    echo "--- $d: re-running fullBurst_geo2rdr (upstream step was incomplete: IW2 had only 5/9 bursts, IW3 had 0/9) ---"
+    SentinelWrapper.py -c "configs/config_fullBurst_geo2rdr_$d"
+    echo "--- $d: geo2rdr done, checking offset completeness ---"
+    for sw in IW1 IW2 IW3; do
+        n=$(ls "coreg_secondarys/$d/$sw"/range_*.off.xml 2>/dev/null | wc -l)
+        echo "    $sw: $n/9 range off files"
+    done
     echo "--- $d: resampling ---"
     SentinelWrapper.py -c "configs/config_fullBurst_resample_$d"
     echo "--- $d: done, exit $? ---"
