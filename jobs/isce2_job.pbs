@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l select=1:ncpus=16:mem=64gb
+#PBS -l select=1:ncpus=16:mem=96gb
 #PBS -l walltime=24:00:00
 #PBS -N isce2_topsStack
 #PBS -o logs/isce2_job.out
