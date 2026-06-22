@@ -1,0 +1,33 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=16:mem=64gb
+#PBS -l walltime=03:00:00
+#PBS -N isce2_fix_stuck
+#PBS -o logs/fix_stuck_dates.out
+#PBS -e logs/fix_stuck_dates.err
+
+set -eo pipefail
+cd "$PBS_O_WORKDIR"
+
+source $HOME/miniconda3/etc/profile.d/conda.sh
+export ISCE_HOME="${ISCE_HOME:-}"
+export ISCE_STACK="${ISCE_STACK:-}"
+conda activate insar
+export ISCE_HOME=$HOME/miniconda3/envs/insar/lib/python3.10/site-packages/isce
+export TOPSSTACK=$HOME/isce2_contrib/contrib/stack/topsStack
+export PATH=$ISCE_HOME/bin:$ISCE_HOME/applications:$TOPSSTACK:$PATH
+export STACK_CONTRIB=$HOME/isce2_contrib/contrib/stack
+export PYTHONPATH=$ISCE_HOME:$STACK_CONTRIB:$PYTHONPATH
+
+cd /rds/general/user/yz4325/ephemeral/irp_insar/data/processed/isce2/
+
+echo "=== fixing stuck dates, one at a time, on a dedicated compute node: $(date) ==="
+for d in 20211130 20211212 20211224; do
+    echo "--- $d: clearing any partial resample output ---"
+    rm -rf "coreg_secondarys/$d/IW1/burst_"*.slc "coreg_secondarys/$d/IW2/burst_"*.slc "coreg_secondarys/$d/IW3/burst_"*.slc 2>/dev/null || true
+    rm -f "coreg_secondarys/$d"/IW*.xml 2>/dev/null || true
+    echo "--- $d: resampling ---"
+    SentinelWrapper.py -c "configs/config_fullBurst_resample_$d"
+    echo "--- $d: done, exit $? ---"
+    ls "coreg_secondarys/$d"/IW*.xml
+done
+echo "=== all stuck dates fixed: $(date) ==="
