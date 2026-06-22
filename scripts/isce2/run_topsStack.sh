@@ -43,9 +43,9 @@ fi
 # no notion of "coregistration done but later steps aren't". That's exactly
 # our case after manually repairing coregistration for a few dates. Hide
 # coreg_secondarys/ during generation so it's treated as a fresh stack (full
-# run_01-14 recipe, not an early sys.exit) — the individual run_01-08
-# commands already skip/no-op quickly once their target output exists, so
-# this costs nothing once restored.
+# run_01-16 recipe, not an early sys.exit). The generated commands have no
+# skip-if-output-exists logic of their own, so the execution loop below
+# explicitly skips run_01..10 if every date is already fully coregistered.
 HID_COREG=false
 if [[ ! -d "$WORK_DIR/merged" ]] && [[ -d "$WORK_DIR/coreg_secondarys" ]]; then
     mv "$WORK_DIR/coreg_secondarys" "$WORK_DIR/.coreg_secondarys.hidden"
@@ -67,6 +67,29 @@ if $GENERATE_ONLY; then
     exit 0
 fi
 
+# Hiding coreg_secondarys/ above forces stackSentinel.py to emit the FULL
+# run_01..run_N recipe covering every secondary date again, even though the
+# scripts it generates have no skip-if-output-exists logic of their own —
+# unlike the incremental recipe (fewer dates per command), this one will
+# genuinely *redo* unpacking/geo2rdr/resampling for every date if executed
+# as-is. If coregistration is already complete for every date, skip
+# executing any run_file at or before fullBurst_resample (numbered <=10 in
+# the fresh/full recipe) — there is nothing left for them to do.
+SKIP_THROUGH_RESAMPLE=false
+if [[ -d "$WORK_DIR/coreg_secondarys" ]] && [[ -n "$(ls -A "$WORK_DIR/coreg_secondarys" 2>/dev/null)" ]]; then
+    incomplete=0
+    for d in "$WORK_DIR"/coreg_secondarys/*/; do
+        d=${d%/}
+        if [[ ! -f "$d/IW1.xml" ]] || [[ ! -f "$d/IW2.xml" ]] || [[ ! -f "$d/IW3.xml" ]]; then
+            incomplete=$((incomplete+1))
+        fi
+    done
+    if [[ $incomplete -eq 0 ]]; then
+        SKIP_THROUGH_RESAMPLE=true
+        echo "--- All secondary dates already fully coregistered: will skip run_01..10 (unpack/baseline/overlap/misreg/geo2rdr/resample) ---"
+    fi
+fi
+
 # stackSentinel.py's --num_proc already bakes its own parallelism directly
 # into multi-line run_files: commands are batched in groups ending with `&`,
 # each batch followed by a `wait` line. Running each line independently
@@ -78,6 +101,11 @@ fi
 # structure do the parallelism.
 echo "--- Executing run_files in order ---"
 for run_script in "$WORK_DIR"/run_files/run_*; do
+    base=$(basename "$run_script")
+    if $SKIP_THROUGH_RESAMPLE && [[ "$base" =~ ^run_([0-9]+)_ ]] && [[ "${BASH_REMATCH[1]#0}" -le 10 ]]; then
+        echo "--- Skipping: $run_script (already complete) ---"
+        continue
+    fi
     n_lines=$(wc -l < "$run_script")
     echo "--- Running: $run_script ($n_lines lines) ---"
     bash "$run_script"
