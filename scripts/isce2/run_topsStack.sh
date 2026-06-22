@@ -36,9 +36,29 @@ if [[ ! -d "$WORK_DIR/merged" ]]; then
     rm -rf "$WORK_DIR/run_files" "$WORK_DIR/configs" "$WORK_DIR/SAFE_files.txt"
 fi
 
+# stackSentinel.py's incremental-stack detection (checkCurrentStatus in
+# stackSentinel.py) hard sys.exit(1)s if every secondary already has a
+# coreg_secondarys/ entry, on the assumption that "all coregistered" means
+# "the whole stack, through final unwrapping, was already finished" — it has
+# no notion of "coregistration done but later steps aren't". That's exactly
+# our case after manually repairing coregistration for a few dates. Hide
+# coreg_secondarys/ during generation so it's treated as a fresh stack (full
+# run_01-14 recipe, not an early sys.exit) — the individual run_01-08
+# commands already skip/no-op quickly once their target output exists, so
+# this costs nothing once restored.
+HID_COREG=false
+if [[ ! -d "$WORK_DIR/merged" ]] && [[ -d "$WORK_DIR/coreg_secondarys" ]]; then
+    mv "$WORK_DIR/coreg_secondarys" "$WORK_DIR/.coreg_secondarys.hidden"
+    HID_COREG=true
+fi
+
 echo "--- Generating run_files ---"
 echo "stackSentinel.py $ARGS"
 ( cd "$WORK_DIR" && eval stackSentinel.py "$ARGS" )
+
+if $HID_COREG; then
+    mv "$WORK_DIR/.coreg_secondarys.hidden" "$WORK_DIR/coreg_secondarys"
+fi
 
 if $GENERATE_ONLY; then
     echo "=== --generate-only: run_files created, processing skipped ==="
