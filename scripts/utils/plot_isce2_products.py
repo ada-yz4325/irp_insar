@@ -17,26 +17,14 @@ Usage:
 """
 
 import argparse
+import sys
 from pathlib import Path
 
-import isce
-import isceobj
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-def load_isce_image(path: str) -> np.ndarray:
-    img = isceobj.createImage()
-    img.load(path + ".xml")
-    width = img.getWidth()
-    length = img.getLength()
-    dtype = {
-        "FLOAT": np.float32,
-        "CFLOAT": np.complex64,
-        "DOUBLE": np.float64,
-    }.get(img.dataType.upper(), np.float32)
-    data = np.fromfile(path, dtype=dtype).reshape(length, width)
-    return data
+sys.path.insert(0, str(Path(__file__).parent))
+from isce_io import read_isce_image
 
 
 def main():
@@ -47,7 +35,7 @@ def main():
     parser.add_argument("--out", default=None, help="Output PNG path (default: figures/<name>_<product>.png)")
     args = parser.parse_args()
 
-    data = load_isce_image(args.file)
+    data = read_isce_image(args.file)
 
     fig, ax = plt.subplots(figsize=(8, 6))
     if args.product == "coherence":
@@ -58,9 +46,9 @@ def main():
         im = ax.imshow(np.angle(data), cmap="hsv", vmin=-np.pi, vmax=np.pi)
         plt.colorbar(im, label="Wrapped phase (rad)")
         title = "Wrapped interferogram"
-    else:  # unwrapped — band 2 of .unw is phase, band 1 is amplitude
-        phase = data[1::2] if data.ndim == 1 else data
-        im = ax.imshow(data, cmap="jet")
+    else:  # unwrapped — ISCE2 .unw is 2-band BIL: [amplitude, phase]
+        phase = data[1] if isinstance(data, list) else data
+        im = ax.imshow(phase, cmap="jet")
         plt.colorbar(im, label="Unwrapped phase (rad)")
         title = "Unwrapped phase"
 

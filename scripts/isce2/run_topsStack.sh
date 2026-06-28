@@ -80,7 +80,10 @@ if [[ -d "$WORK_DIR/coreg_secondarys" ]] && [[ -n "$(ls -A "$WORK_DIR/coreg_seco
     incomplete=0
     for d in "$WORK_DIR"/coreg_secondarys/*/; do
         d=${d%/}
-        if [[ ! -f "$d/IW1.xml" ]] || [[ ! -f "$d/IW2.xml" ]] || [[ ! -f "$d/IW3.xml" ]]; then
+        # Checks whichever IW*.xml swaths are actually configured (this stack
+        # is single-swath IW1-only; hardcoding IW1/IW2/IW3 here would always
+        # report "incomplete" since IW2/IW3 never get produced).
+        if [[ -z "$(ls "$d"/IW*.xml 2>/dev/null)" ]]; then
             incomplete=$((incomplete+1))
         fi
     done
