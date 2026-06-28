@@ -72,10 +72,19 @@ fi
 # scripts it generates have no skip-if-output-exists logic of their own —
 # unlike the incremental recipe (fewer dates per command), this one will
 # genuinely *redo* unpacking/geo2rdr/resampling for every date if executed
-# as-is. If coregistration is already complete for every date, skip
-# executing any run_file at or before fullBurst_resample (numbered <=10 in
-# the fresh/full recipe) — there is nothing left for them to do.
+# as-is. If coregistration is already complete for every date, skip every
+# run_file up to and including *_fullBurst_resample -- there is nothing
+# left for them to do. The resample step's number is NOT a fixed "10":
+# it depends on the coregistration method (NESD's extra overlap/misreg
+# steps push it to run_10; geometry coregistration has no such steps and
+# resample is run_05), so it's found dynamically rather than hardcoded.
 SKIP_THROUGH_RESAMPLE=false
+RESAMPLE_FILE=$(basename "$(ls "$WORK_DIR"/run_files/run_*_fullBurst_resample 2>/dev/null | head -1)")
+if [[ -n "$RESAMPLE_FILE" ]] && [[ "$RESAMPLE_FILE" =~ ^run_([0-9]+)_ ]]; then
+    RESAMPLE_STEP=$((10#${BASH_REMATCH[1]}))
+else
+    RESAMPLE_STEP=0
+fi
 if [[ -d "$WORK_DIR/coreg_secondarys" ]] && [[ -n "$(ls -A "$WORK_DIR/coreg_secondarys" 2>/dev/null)" ]]; then
     incomplete=0
     for d in "$WORK_DIR"/coreg_secondarys/*/; do
@@ -87,9 +96,9 @@ if [[ -d "$WORK_DIR/coreg_secondarys" ]] && [[ -n "$(ls -A "$WORK_DIR/coreg_seco
             incomplete=$((incomplete+1))
         fi
     done
-    if [[ $incomplete -eq 0 ]]; then
+    if [[ $incomplete -eq 0 ]] && [[ $RESAMPLE_STEP -gt 0 ]]; then
         SKIP_THROUGH_RESAMPLE=true
-        echo "--- All secondary dates already fully coregistered: will skip run_01..10 (unpack/baseline/overlap/misreg/geo2rdr/resample) ---"
+        echo "--- All secondary dates already fully coregistered: will skip run_01..$RESAMPLE_STEP (through fullBurst_resample) ---"
     fi
 fi
 
@@ -105,7 +114,7 @@ fi
 echo "--- Executing run_files in order ---"
 for run_script in "$WORK_DIR"/run_files/run_*; do
     base=$(basename "$run_script")
-    if $SKIP_THROUGH_RESAMPLE && [[ "$base" =~ ^run_([0-9]+)_ ]] && [[ "${BASH_REMATCH[1]#0}" -le 10 ]]; then
+    if $SKIP_THROUGH_RESAMPLE && [[ "$base" =~ ^run_([0-9]+)_ ]] && [[ $((10#${BASH_REMATCH[1]})) -le $RESAMPLE_STEP ]]; then
         echo "--- Skipping: $run_script (already complete) ---"
         continue
     fi
