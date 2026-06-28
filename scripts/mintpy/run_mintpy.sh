@@ -71,6 +71,19 @@ python "$SCRIPT_DIR/export_velocity_products.py" \
 smallbaselineApp.py "$TEMPLATE" --dostep google_earth
 smallbaselineApp.py "$TEMPLATE" --dostep hdfeos5
 
+echo "--- Stage 14: export and quick-look figures ---"
+python "$SCRIPT_DIR/export_timeseries.py" \
+    --ts   "$WORK_DIR/timeseries.h5" \
+    --mask "$WORK_DIR/masks/mask_ps_like.h5" \
+    --out  "$EXPORTS_DIR/timeseries_points.csv"
+python "$SCRIPT_DIR/export_ps_points_geojson.py" \
+    --mintpy-dir "$WORK_DIR" \
+    --out "$EXPORTS_DIR/ps_like_points.geojson"
+python "$SCRIPT_DIR/../utils/plot_pipeline_results.py" \
+    --mintpy-dir "$WORK_DIR" \
+    --exports-dir "$EXPORTS_DIR" \
+    --out-dir "$SCRIPT_DIR/../../figures"
+
 echo "=== MintPy complete: $(date) ==="
 echo "Key outputs:"
 echo "  $WORK_DIR/velocity.h5"
@@ -80,3 +93,6 @@ echo "  $WORK_DIR/temporalCoherence.h5"
 echo "  $WORK_DIR/masks/mask_ps_like.h5"
 echo "  $WORK_DIR/atmosphere/corrected_timeseries.h5"
 echo "  $EXPORTS_DIR/velocity.tif"
+echo "  $EXPORTS_DIR/timeseries_points.csv"
+echo "  $EXPORTS_DIR/ps_like_points.geojson"
+echo "  figures/velocity_map.png, temporal_coherence.png, ps_like_mask.png, selected_point_timeseries.png"
