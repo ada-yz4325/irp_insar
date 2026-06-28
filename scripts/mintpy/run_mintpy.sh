@@ -26,6 +26,18 @@ print(c['topsStack']['workDir'])
 EXPORTS_DIR=${5:-"$SCRIPT_DIR/../../exports"}
 ATMO_SCRIPT="$SCRIPT_DIR/../../atmospheric_correction/apply_atmo_correction.py"
 
+# Canonicalize every path arg to absolute BEFORE the `cd "$WORK_DIR"` below --
+# a caller-supplied relative path (e.g. jobs/mintpy_job.pbs passes
+# "configs/mintpy/smallbaselineApp_template.cfg" relative to $PBS_O_WORKDIR)
+# would otherwise silently stop resolving once the cwd changes, and
+# smallbaselineApp.py would fail with FileNotFoundError on its own template.
+to_abs() { [[ "$1" = /* ]] && echo "$1" || echo "$PWD/$1"; }
+TEMPLATE=$(to_abs "$TEMPLATE")
+WORK_DIR=$(to_abs "$WORK_DIR")
+ATMO_CONFIG=$(to_abs "$ATMO_CONFIG")
+ISCE_WORK_DIR=$(to_abs "$ISCE_WORK_DIR")
+EXPORTS_DIR=$(to_abs "$EXPORTS_DIR")
+
 mkdir -p "$WORK_DIR"
 cd "$WORK_DIR"
 
