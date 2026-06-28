@@ -50,6 +50,10 @@ def main():
     if master_date:
         args += ["-m", master_date]
 
+    bbox = c.get("bbox", "").strip()
+    if bbox:
+        args += ["-b", bbox]
+
     if c.getboolean("useGPU", False):
         args += ["-useGPU"]
 

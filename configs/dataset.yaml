@@ -1,0 +1,33 @@
+# ============================================================
+# Dataset identity — single source of truth for Stage 1 validation
+# Every SLC in data/raw/slc/ must match these fields exactly, or the
+# stack is geometrically inconsistent and cannot be stacked.
+# Values below were verified by inspecting manifest.safe of all 57
+# already-downloaded scenes (see scripts/isce2/check_stack_metadata.py).
+# ============================================================
+
+aoi_name: beijing_urban_core
+
+# Relative orbit number (Sentinel-1 "track")
+relative_orbit: 69
+
+# ASCENDING | DESCENDING — never mixed within a stack
+pass_direction: ASCENDING
+
+# Subswath in use for this validation stack (single-burst, single-swath
+# by design — see configs/burst_subset.yaml)
+swath: IW1
+
+# Polarization — VV preferred for urban PS stability
+polarization: VV
+
+# Approximate footprint of the full SLC frame (south, north, west, east),
+# read from manifest.safe gml:coordinates of the first downloaded scene.
+# This is the FRAME footprint, not the single-burst footprint — the
+# tighter burst-level AOI is recorded in configs/burst_subset.yaml once
+# the stack has been built.
+frame_bbox_snwe: [39.706468, 40.028375, 116.274582, 117.363225]
+
+# Sensor family observed in the stack (informational; mixed S1A/S1B is fine
+# as long as orbit/frame/direction/swath/polarization above match)
+sensor_family: SENTINEL-1
