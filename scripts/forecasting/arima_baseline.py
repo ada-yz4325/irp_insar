@@ -1,9 +1,12 @@
 """
 ARIMA baseline forecasting for pixel-wise InSAR displacement time series.
 
+Input is the Stage 14 export (scripts/mintpy/export_timeseries.py), schema
+row,col,date,displacement_mm -- one row per pixel per acquisition date.
+
 Usage:
     python arima_baseline.py \
-        --input ../../data/processed/timeseries.csv \
+        --input ../../exports/timeseries_points.csv \
         --out   ../../results/forecasts/arima_results.csv \
         --horizon 12
 """

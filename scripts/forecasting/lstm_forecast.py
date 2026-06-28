@@ -6,9 +6,12 @@ sliding windows (each pixel has too few points, ~30-100, to train a network
 on its own). At inference, each pixel's most recent window is forecast
 forward independently.
 
+Input is the Stage 14 export (scripts/mintpy/export_timeseries.py), schema
+row,col,date,displacement_mm -- one row per pixel per acquisition date.
+
 Usage:
     python lstm_forecast.py \
-        --input ../../data/processed/timeseries.csv \
+        --input ../../exports/timeseries_points.csv \
         --out   ../../results/forecasts/lstm_results.csv \
         --lookback 12 --horizon 12 --epochs 50
 """
