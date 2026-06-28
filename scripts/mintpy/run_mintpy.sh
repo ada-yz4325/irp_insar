@@ -23,6 +23,7 @@ c = configparser.ConfigParser(inline_comment_prefixes=('#',))
 c.read('$ISCE2_CFG')
 print(c['topsStack']['workDir'])
 ")}
+EXPORTS_DIR=${5:-"$SCRIPT_DIR/../../exports"}
 ATMO_SCRIPT="$SCRIPT_DIR/../../atmospheric_correction/apply_atmo_correction.py"
 
 mkdir -p "$WORK_DIR"
@@ -61,13 +62,21 @@ smallbaselineApp.py "$TEMPLATE" --dostep residual_RMS
 smallbaselineApp.py "$TEMPLATE" --dostep reference_date
 smallbaselineApp.py "$TEMPLATE" --dostep velocity
 smallbaselineApp.py "$TEMPLATE" --dostep geocode
+
+echo "--- Stage 13: velocity uncertainty export + GeoTIFF ---"
+python "$SCRIPT_DIR/export_velocity_products.py" \
+    --mintpy-dir "$WORK_DIR" \
+    --out-dir "$EXPORTS_DIR"
+
 smallbaselineApp.py "$TEMPLATE" --dostep google_earth
 smallbaselineApp.py "$TEMPLATE" --dostep hdfeos5
 
 echo "=== MintPy complete: $(date) ==="
 echo "Key outputs:"
 echo "  $WORK_DIR/velocity.h5"
+echo "  $WORK_DIR/velocity_std.h5"
 echo "  $WORK_DIR/timeseries.h5"
 echo "  $WORK_DIR/temporalCoherence.h5"
 echo "  $WORK_DIR/masks/mask_ps_like.h5"
 echo "  $WORK_DIR/atmosphere/corrected_timeseries.h5"
+echo "  $EXPORTS_DIR/velocity.tif"
