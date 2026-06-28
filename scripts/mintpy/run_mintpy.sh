@@ -48,6 +48,14 @@ echo "Start    : $(date)"
 
 smallbaselineApp.py "$TEMPLATE" --dostep load_data
 smallbaselineApp.py "$TEMPLATE" --dostep modify_network
+smallbaselineApp.py "$TEMPLATE" --dostep reference_point
+smallbaselineApp.py "$TEMPLATE" --dostep quick_overview
+# Required because configs/mintpy/smallbaselineApp_template.cfg sets
+# mintpy.unwrapError.method = bridging+phase_closure -- invert_network then
+# expects the "unwrapPhase_bridging_phaseClosure" dataset this step writes
+# into ifgramStack.h5; skipping it crashes invert_network with ValueError
+# (confirmed live: job 3128109.pbs-7).
+smallbaselineApp.py "$TEMPLATE" --dostep correct_unwrap_error
 smallbaselineApp.py "$TEMPLATE" --dostep invert_network
 
 echo "--- Stage 10: PS-like stable-pixel mask ---"
@@ -56,6 +64,11 @@ python "$SCRIPT_DIR/build_ps_like_mask.py" \
     --isce-work-dir "$ISCE_WORK_DIR"
 
 smallbaselineApp.py "$TEMPLATE" --dostep correct_LOD
+# Both default to "no" in this project's config (no SET/ionosphere params
+# set) -- included for completeness with MintPy's canonical step order
+# rather than silently skipped.
+smallbaselineApp.py "$TEMPLATE" --dostep correct_SET
+smallbaselineApp.py "$TEMPLATE" --dostep correct_ionosphere
 
 echo "--- Stage 11: pluggable atmospheric correction (see atmospheric_correction/README.md) ---"
 python "$ATMO_SCRIPT" \
