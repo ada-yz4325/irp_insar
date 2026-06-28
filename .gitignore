@@ -56,3 +56,7 @@ isce.log
 
 # macOS
 .DS_Store
+
+# Claude Code local settings (may cache literal command strings incl. secrets
+# used in approved Bash calls — never commit)
+.claude/
