@@ -1,0 +1,32 @@
+# ============================================================
+# Stage 2 — burst / AOI subset selection
+# Declares which swath/bursts to restrict ISCE2 processing to.
+# Intentionally small for first validation: one IW swath, the burst(s)
+# that overlap the urban AOI, VV polarization only.
+#
+# This is the input declaration consumed by
+# scripts/isce2/cfg_to_stacksentinel_args.py (via configs/isce2/topsStack_template.cfg
+# swathNum/bbox fields, which must stay consistent with this file).
+# After the stack is built, scripts/isce2/record_burst_subset.py inspects the
+# actual reference/IW*/burst_*.xml outputs and writes the *resolved* burst
+# count/indices to metadata/resolved_burst_subset.yaml for the record.
+# ============================================================
+
+aoi_name: beijing_urban_core
+
+# Target subswath for this validation stack (see configs/dataset.yaml)
+swath: IW1
+
+# Optional tight AOI clip "south north west east" in decimal degrees.
+# Blank = use the common overlap between all scenes in the stack, which
+# has already been verified to resolve to exactly one burst (burst_01)
+# in IW1 for this 57-scene stack. Set this if/when scaling to a larger
+# AOI that spans multiple bursts and only a subset should be kept.
+bbox: ""
+
+# Polarization for this validation pass
+polarization: VV
+
+# Reference scene used by stackSentinel for coregistration (blank = let
+# stackSentinel pick the scene closest to the stack's temporal centre)
+reference_date: ""
