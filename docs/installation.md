@@ -23,33 +23,41 @@ smallbaselineApp.py --version
 ## 3. Verify ISCE2
 
 ```bash
-python -c "import isce; print(isce.__version__)"
-stackSentinel.py --help
+python -c "import isce; print(isce.__file__)"
 ```
 
-If ISCE2 is not available via conda-forge, install from source:
+conda-forge's `isce2` package does **not** include `stackSentinel.py`
+(the topsStack stack-processing tool) -- it must be pulled separately:
 
 ```bash
-git clone https://github.com/isce-framework/isce2.git
-cd isce2
-conda install --file requirements.txt
-python setup.py install --prefix=$CONDA_PREFIX
+git clone https://github.com/isce-framework/isce2.git $HOME/isce2_contrib
 ```
 
-Set environment variables (add to `~/.bashrc`):
+Set environment variables (add to `~/.bashrc`, or export them at the top
+of any PBS job script -- see `jobs/isce2_job.pbs` for the exact pattern):
 
 ```bash
 export ISCE_HOME=$CONDA_PREFIX/lib/python3.10/site-packages/isce
-export PATH=$PATH:$ISCE_HOME/applications:$ISCE_HOME/bin
-export PYTHONPATH=$PYTHONPATH:$ISCE_HOME
+export TOPSSTACK=$HOME/isce2_contrib/contrib/stack/topsStack
+export STACK_CONTRIB=$HOME/isce2_contrib/contrib/stack
+export PATH=$ISCE_HOME/bin:$ISCE_HOME/applications:$TOPSSTACK:$PATH
+export PYTHONPATH=$ISCE_HOME:$STACK_CONTRIB:$PYTHONPATH
+```
+
+Verify:
+
+```bash
+stackSentinel.py --help
 ```
 
 ## 4. SNAPHU (phase unwrapping)
 
-SNAPHU is included via conda-forge. Verify:
+SNAPHU is included via conda-forge as a Python package (`snaphu`), not a
+bare CLI binary on `$PATH` -- ISCE2's own `Snaphu.py` wrapper calls into
+it directly, so nothing extra is needed. Verify:
 
 ```bash
-snaphu --version
+python -c "import snaphu; print(snaphu.__file__)"
 ```
 
 ## 5. NASA EarthData credentials
@@ -66,12 +74,21 @@ machine urs.earthdata.nasa.gov
 chmod 600 ~/.netrc
 ```
 
-## 6. ERA5 / GACOS for tropospheric correction (optional)
+## 6. ERA5 weather-model correction (Stage 11, optional)
 
-Install PyAPS:
+Only needed if `configs/atmo_correction.yaml`'s `method` is set to
+`weather_model`/`mintpy_default` -- the default for this project's first
+validation pass is `none` (see `atmospheric_correction/README.md`).
 
 ```bash
 pip install pyaps3
 ```
 
-Configure `~/.pyaps/model.cfg` with your CDS API key.
+Configure `~/.cdsapirc` with your Copernicus Climate Data Store API key
+(not `~/.pyaps/model.cfg` -- that's the legacy PyAPS convention; pyaps3
+uses the `cdsapi` library's standard credential file):
+
+```
+url: https://cds.climate.copernicus.eu/api
+key: YOUR_CDS_API_KEY
+```

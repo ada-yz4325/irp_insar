@@ -1,4 +1,4 @@
-# Himalayan InSAR Ground Deformation Forecasting
+# Urban PS-Focused InSAR Processor
 
 Imperial College London — MSc Individual Research Project
 
@@ -6,11 +6,19 @@ Imperial College London — MSc Individual Research Project
 
 ## Overview
 
-End-to-end pipeline for Himalayan ground deformation monitoring and forecasting:
+Sentinel-1 InSAR pipeline validated on a small, urban, single-burst stack
+before scaling up. Goal: persistent-scatterer-like (PS-like) stable urban
+targets, deformation time series, and a velocity map -- not a large
+full-frame deformation survey.
 
 ```
-Sentinel-1 SLC  →  ISCE2  →  MintPy (SBAS)  →  ARIMA / LSTM / Transformer
+Sentinel-1 SLC  →  ISCE2 (single-burst stack)  →  MintPy (SBAS + PS-like mask)
+                 →  pluggable atmospheric correction  →  velocity map  →  export
 ```
+
+Validation stack: 57 Sentinel-1A scenes, track 69, ascending, IW1,
+single burst, VV-only, covering a ~30×130 km swath through Beijing's
+urban core (~39.7-40.0°N, 116.3-117.4°E). See `configs/dataset.yaml`.
 
 ## Quick Start
 
@@ -19,50 +27,62 @@ conda env create -f environment.yml
 conda activate insar
 ```
 
-See [docs/installation.md](docs/installation.md) for full setup and [docs/hpc_workflow.md](docs/hpc_workflow.md) for HPC processing.
+See [docs/installation.md](docs/installation.md) for full setup and
+[docs/hpc_workflow.md](docs/hpc_workflow.md) for HPC processing.
 
 ## Repository Layout
 
 ```
 irp_insar/
 ├── configs/
-│   ├── isce2/          # topsStack configuration templates
-│   └── mintpy/         # smallbaselineApp templates
+│   ├── dataset.yaml              # verified stack geometry (track/direction/swath/pol)
+│   ├── burst_subset.yaml         # Stage 2 burst/AOI subset declaration
+│   ├── atmo_correction.yaml      # Stage 11 method selector
+│   ├── isce2/                    # topsStack configuration template
+│   └── mintpy/                   # smallbaselineApp template
 ├── scripts/
-│   ├── download/       # Sentinel-1 ASF download
-│   ├── preprocessing/  # orbit/DEM preparation utilities
-│   ├── isce2/          # stack processing wrappers
-│   ├── mintpy/         # time-series inversion + export
-│   └── forecasting/    # ARIMA, LSTM, Transformer
-├── notebooks/          # exploratory analysis
-├── data/
-│   ├── raw/            # SLC zips, orbits, DEM (git-ignored)
-│   ├── processed/      # exported CSVs, masked arrays
-│   └── mintpy_outputs/ # .h5 products (git-ignored)
-├── results/
-│   ├── interferograms/
-│   ├── timeseries/
-│   ├── velocity/
-│   └── forecasts/
-├── figures/
+│   ├── download/                 # Sentinel-1 ASF download
+│   ├── isce2/                    # stack processing, metadata/geometry/unwrap checks
+│   ├── mintpy/                   # load, PS-like mask, inversion, velocity, export
+│   ├── utils/                    # ISCE2 image I/O, plotting, consolidated validation
+│   └── forecasting/              # ARIMA, LSTM (downstream of this pipeline's scope)
+├── atmospheric_correction/       # Stage 11 pluggable interface (see its README)
+├── notebooks/                    # exploratory analysis
+├── data/                         # raw/processed/mintpy_outputs (git-ignored; lives on ephemeral)
+├── metadata/                     # stack_inventory.csv, resolved_burst_subset.yaml (tracked)
+├── figures/                      # quick-look PNGs (git-ignored except this README ref)
+├── exports/                      # velocity.tif, timeseries_points.csv, ps_like_points.geojson
+├── jobs/                         # PBS job scripts
 ├── docs/
 └── reports/
 ```
 
 ## Pipeline Stages
 
-| Stage | Tool | Script |
-|-------|------|--------|
-| Data acquisition | asf-search | `scripts/download/download_s1.py` |
-| Interferometric processing | ISCE2 topsStack | `scripts/isce2/run_topsStack.sh` |
-| Time-series inversion | MintPy SBAS | `scripts/mintpy/run_mintpy.sh` |
-| Time-series export | h5py / pandas | `scripts/mintpy/export_timeseries.py` |
-| ARIMA baseline | statsmodels | `scripts/forecasting/arima_baseline.py` |
-| LSTM / Transformer | PyTorch | `scripts/forecasting/` *(to be implemented)* |
+| Stage | Script |
+|---|---|
+| 1. Stack metadata scan + validation | `scripts/isce2/check_stack_metadata.py` → `metadata/stack_inventory.csv` |
+| 2. Burst/AOI subset declaration | `configs/burst_subset.yaml`, resolved by `scripts/isce2/record_burst_subset.py` |
+| 3-6. ISCE2 stack: coregistration, interferograms, filtering | `scripts/isce2/run_topsStack.sh` (geometry coregistration -- see config comments on why NESD/ESD doesn't work for a single-burst stack) |
+| 7. Unwrapping + quality masks | `scripts/isce2/build_unwrap_mask.py` |
+| 8. Geometry validation | `scripts/isce2/check_geometry.py` |
+| 9. MintPy load + validation | `scripts/mintpy/check_mintpy_load.py` |
+| 10. PS-like stable-pixel mask | `scripts/mintpy/build_ps_like_mask.py` |
+| 11. Pluggable atmospheric correction | `atmospheric_correction/apply_atmo_correction.py` (see its README) |
+| 12-13. Time-series inversion, velocity, uncertainty | `scripts/mintpy/run_mintpy.sh`, `scripts/mintpy/export_velocity_products.py` |
+| 14. Export + visualization | `scripts/mintpy/export_timeseries.py`, `export_ps_points_geojson.py`, `scripts/utils/plot_pipeline_results.py` |
+| All-in-one validation | `scripts/utils/validate_pipeline.py` (12 checks) |
+| Forecasting (downstream, optional) | `scripts/forecasting/arima_baseline.py`, `lstm_forecast.py` |
+
+`scripts/isce2/run_topsStack.sh` and `scripts/mintpy/run_mintpy.sh` are the
+two orchestration entry points -- everything else above is either called
+from inside them or run standalone for validation.
 
 ## Key Outputs
 
-- `data/mintpy_outputs/velocity.h5` — mean LOS velocity map
+- `data/mintpy_outputs/velocity.h5`, `velocity_std.h5` — mean LOS velocity + uncertainty
 - `data/mintpy_outputs/timeseries.h5` — pixel-wise displacement time series
-- `data/processed/timeseries.csv` — flattened CSV for ML models
-- `results/forecasts/` — model predictions
+- `data/mintpy_outputs/masks/mask_ps_like.h5` — PS-like stable-pixel mask
+- `data/mintpy_outputs/atmosphere/{corrected,uncorrected}_timeseries.h5` — Stage 11 outputs
+- `exports/velocity.tif`, `timeseries_points.csv`, `ps_like_points.geojson`
+- `figures/velocity_map.png`, `temporal_coherence.png`, `ps_like_mask.png`, `selected_point_timeseries.png`
