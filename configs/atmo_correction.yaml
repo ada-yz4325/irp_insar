@@ -1,0 +1,32 @@
+# ============================================================
+# Atmospheric correction interface — active project config.
+# Schema documented in atmospheric_correction/config_atmo.yaml.
+# This is the file scripts/mintpy/run_mintpy.sh actually passes to
+# atmospheric_correction/apply_atmo_correction.py.
+# ============================================================
+
+# One of: none | mintpy_default | weather_model | external_delay | custom
+#
+#   none            - passthrough. corrected_timeseries.h5 == uncorrected.
+#   mintpy_default  - alias for weather_model (kept as a separate name so
+#                     callers can express "whatever this project's default
+#                     is" without hardcoding a model).
+#   weather_model   - MintPy's PyAPS3 ERA5 correction (mintpy.cli.tropo_pyaps3).
+#                     Requires pyaps3 + a ~/.cdsapirc with valid CDS API
+#                     credentials (both already present in this env).
+#   external_delay  - subtract a user-supplied delay timeseries (h5, same
+#                     dims as timeseries.h5) given by external_delay_path.
+#   custom          - import custom_module_path and call
+#                     custom_func(timeseries_array, dates, attrs) -> corrected_array
+method: none
+
+# --- weather_model / mintpy_default options ---
+weather_model: ERA5          # ERA5 (only model wired into mintpy.cli.tropo_pyaps3 here)
+weather_dir: ""               # blank = <mintpy_dir>/atmosphere/weather_data
+
+# --- external_delay options ---
+external_delay_path: ""
+
+# --- custom options ---
+custom_module_path: ""
+custom_func: correct
