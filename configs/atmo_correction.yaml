@@ -18,7 +18,7 @@
 #                     dims as timeseries.h5) given by external_delay_path.
 #   custom          - import custom_module_path and call
 #                     custom_func(timeseries_array, dates, attrs) -> corrected_array
-method: none
+method: weather_model
 
 # --- weather_model / mintpy_default options ---
 weather_model: ERA5          # ERA5 (only model wired into mintpy.cli.tropo_pyaps3 here)

@@ -1,16 +1,21 @@
 """
-Stage 13 — velocity uncertainty export + GeoTIFF.
+Stage 13 — velocity uncertainty export + GeoTIFF, in vertical deformation.
 
-MintPy's own `velocity` dostep already produces velocity.h5 with both a
-'velocity' and a 'velocityStd' dataset (smallbaselineApp's --uq default
-is "residue", Fattahi & Amelung 2015 -- no extra flag needed). This
-script does the parts the report needs that smallbaselineApp doesn't
-already produce as separate, mask-applied files:
+MintPy's own `velocity` dostep produces velocity.h5 (LOS, both 'velocity'
+and 'velocityStd' datasets -- smallbaselineApp's --uq default is "residue",
+Fattahi & Amelung 2015). scripts/mintpy/project_los_to_vertical.py runs
+right after that dostep and projects it to velocity_vertical.h5 (single-
+geometry vertical approximation, see that script's docstring). This script
+does the parts the report needs that smallbaselineApp doesn't already
+produce as separate, mask-applied files, all in the vertical domain:
 
-  1. extracts 'velocityStd' into its own PS-like-masked velocity_std.h5
-  2. geocodes mask_ps_like.h5 (not part of MintPy's own geocode dostep
-     file list) so it lines up with the already-geocoded geo/geo_velocity.h5
-  3. exports a PS-masked, geocoded velocity.tif (GeoTIFF)
+  1. extracts 'velocityStd' into its own PS-like-masked
+     velocity_std_vertical.h5
+  2. geocodes velocity_vertical.h5 and mask_ps_like.h5 (neither is part of
+     MintPy's own geocode dostep file list, which only knows about the
+     original LOS velocity.h5)
+  3. exports a PS-masked, geocoded velocity.tif (GeoTIFF) of vertical
+     deformation rate
 
 Usage:
     python export_velocity_products.py --mintpy-dir <dir> --out-dir exports
@@ -31,7 +36,7 @@ def main():
     args = ap.parse_args()
 
     mintpy_dir = Path(args.mintpy_dir)
-    velocity_file = mintpy_dir / "velocity.h5"
+    velocity_file = mintpy_dir / "velocity_vertical.h5"
     mask_file = mintpy_dir / "masks" / "mask_ps_like.h5"
     geom_file = mintpy_dir / "inputs" / "geometryRadar.h5"
     geo_dir = mintpy_dir / "geo"
@@ -40,33 +45,33 @@ def main():
 
     for f in (velocity_file, mask_file, geom_file):
         if not f.exists():
-            sys.exit(f"Missing required file: {f}")
+            sys.exit(f"Missing required file: {f} -- has project_los_to_vertical.py run yet?")
 
-    # --- velocity_std.h5: extract + PS-like mask ---
+    # --- velocity_std_vertical.h5: extract + PS-like mask ---
     std, atr = readfile.read(str(velocity_file), datasetName="velocityStd")
     mask, _ = readfile.read(str(mask_file))
     std_masked = np.where(mask, std, np.nan).astype(np.float32)
 
     std_atr = dict(atr)
     std_atr["FILE_TYPE"] = "velocity"
-    std_out = mintpy_dir / "velocity_std.h5"
+    std_out = mintpy_dir / "velocity_std_vertical.h5"
     writefile.write(std_masked, out_file=str(std_out), metadata=std_atr)
     print(f"Wrote {std_out}")
 
-    # --- geocode the PS-like mask so it lines up with geo/geo_velocity.h5 ---
-    if not geo_dir.is_dir():
-        sys.exit(f"No {geo_dir} -- has the geocode dostep (Stage 13) run yet?")
+    # --- geocode velocity_vertical.h5 + the PS-like mask (not in MintPy's
+    # own geocode dostep file list) so they line up spatially ---
+    geo_dir.mkdir(exist_ok=True)
+    import mintpy.cli.geocode as geocode
+
+    geo_velocity = geo_dir / "geo_velocity_vertical.h5"
+    if not geo_velocity.exists():
+        geocode.main([str(velocity_file), "-l", str(geom_file), "--outdir", str(geo_dir)])
 
     geo_mask = geo_dir / "geo_mask_ps_like.h5"
     if not geo_mask.exists():
-        import mintpy.cli.geocode as geocode
         geocode.main([str(mask_file), "-l", str(geom_file), "--outdir", str(geo_dir)])
 
-    geo_velocity = geo_dir / "geo_velocity.h5"
-    if not geo_velocity.exists():
-        sys.exit(f"Missing {geo_velocity} -- has the geocode dostep run yet?")
-
-    # --- GeoTIFF export, PS-masked ---
+    # --- GeoTIFF export, PS-masked, vertical deformation rate ---
     import mintpy.cli.save_gdal as save_gdal
     tif_out = out_dir / "velocity.tif"
     save_gdal.main([

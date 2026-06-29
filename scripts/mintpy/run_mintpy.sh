@@ -88,6 +88,10 @@ smallbaselineApp.py "$TEMPLATE" --dostep reference_date
 smallbaselineApp.py "$TEMPLATE" --dostep velocity
 smallbaselineApp.py "$TEMPLATE" --dostep geocode
 
+echo "--- Stage 12/13: LOS -> vertical deformation projection ---"
+python "$SCRIPT_DIR/project_los_to_vertical.py" \
+    --mintpy-dir "$WORK_DIR"
+
 echo "--- Stage 13: velocity uncertainty export + GeoTIFF ---"
 python "$SCRIPT_DIR/export_velocity_products.py" \
     --mintpy-dir "$WORK_DIR" \
@@ -98,7 +102,7 @@ smallbaselineApp.py "$TEMPLATE" --dostep hdfeos5
 
 echo "--- Stage 14: export and quick-look figures ---"
 python "$SCRIPT_DIR/export_timeseries.py" \
-    --ts   "$WORK_DIR/timeseries.h5" \
+    --ts   "$WORK_DIR/timeseries_vertical.h5" \
     --mask "$WORK_DIR/masks/mask_ps_like.h5" \
     --out  "$EXPORTS_DIR/timeseries_points.csv"
 python "$SCRIPT_DIR/export_ps_points_geojson.py" \
@@ -111,13 +115,13 @@ python "$SCRIPT_DIR/../utils/plot_pipeline_results.py" \
 
 echo "=== MintPy complete: $(date) ==="
 echo "Key outputs:"
-echo "  $WORK_DIR/velocity.h5"
-echo "  $WORK_DIR/velocity_std.h5"
-echo "  $WORK_DIR/timeseries.h5"
+echo "  $WORK_DIR/velocity.h5 (LOS)              -> velocity_vertical.h5 (vertical)"
+echo "  $WORK_DIR/velocity_std_vertical.h5"
+echo "  $WORK_DIR/timeseries.h5 (LOS)             -> timeseries_vertical.h5 (vertical)"
 echo "  $WORK_DIR/temporalCoherence.h5"
 echo "  $WORK_DIR/masks/mask_ps_like.h5"
 echo "  $WORK_DIR/atmosphere/corrected_timeseries.h5"
-echo "  $EXPORTS_DIR/velocity.tif"
-echo "  $EXPORTS_DIR/timeseries_points.csv"
+echo "  $EXPORTS_DIR/velocity.tif (vertical deformation rate)"
+echo "  $EXPORTS_DIR/timeseries_points.csv (vertical displacement)"
 echo "  $EXPORTS_DIR/ps_like_points.geojson"
 echo "  figures/velocity_map.png, temporal_coherence.png, ps_like_mask.png, selected_point_timeseries.png"

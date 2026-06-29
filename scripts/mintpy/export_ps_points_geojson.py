@@ -2,9 +2,10 @@
 Stage 14 — export PS-like stable-pixel locations to exports/ps_like_points.geojson.
 
 Each point carries its radar-coordinate (row, col), lat/lon (from
-geometryRadar.h5) and mean velocity / velocity uncertainty (mm/yr, from
-velocity.h5 / velocity_std.h5) as properties, restricted to Stage 10's
-mask_ps_like.h5.
+geometryRadar.h5) and mean vertical velocity / velocity uncertainty
+(mm/yr, from velocity_vertical.h5 / velocity_std_vertical.h5 -- see
+scripts/mintpy/project_los_to_vertical.py) as properties, restricted to
+Stage 10's mask_ps_like.h5.
 
 Usage:
     python export_ps_points_geojson.py --mintpy-dir <dir> --out exports/ps_like_points.geojson
@@ -32,8 +33,8 @@ def main():
     mintpy_dir = Path(args.mintpy_dir)
     mask_file = mintpy_dir / "masks" / "mask_ps_like.h5"
     geom_file = mintpy_dir / "inputs" / "geometryRadar.h5"
-    velocity_file = mintpy_dir / "velocity.h5"
-    std_file = mintpy_dir / "velocity_std.h5"
+    velocity_file = mintpy_dir / "velocity_vertical.h5"
+    std_file = mintpy_dir / "velocity_std_vertical.h5"
 
     for f in (mask_file, geom_file, velocity_file):
         if not f.exists():

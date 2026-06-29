@@ -2,11 +2,11 @@
 Stage 14 — quick-look figures for the urban PS-InSAR pipeline.
 
 Produces:
-    figures/velocity_map.png            -- PS-masked mean LOS velocity (mm/yr)
+    figures/velocity_map.png            -- PS-masked mean vertical velocity (mm/yr)
     figures/temporal_coherence.png       -- temporalCoherence.h5
     figures/ps_like_mask.png             -- mask_ps_like.h5
-    figures/selected_point_timeseries.png -- displacement history for a few
-                                              sample PS-like points
+    figures/selected_point_timeseries.png -- vertical displacement history for
+                                              a few sample PS-like points
 
 Usage:
     python plot_pipeline_results.py --mintpy-dir <dir> --exports-dir exports --out-dir figures
@@ -23,14 +23,14 @@ from mintpy.utils import readfile
 
 
 def plot_velocity(mintpy_dir: Path, mask: np.ndarray, out_dir: Path):
-    vel, _ = readfile.read(str(mintpy_dir / "velocity.h5"), datasetName="velocity")
+    vel, _ = readfile.read(str(mintpy_dir / "velocity_vertical.h5"), datasetName="velocity")
     vel_mm = np.where(mask, vel * 1000.0, np.nan)
 
     vmax = np.nanpercentile(np.abs(vel_mm), 95) if np.isfinite(vel_mm).any() else 1.0
     fig, ax = plt.subplots(figsize=(8, 6))
     im = ax.imshow(vel_mm, cmap="RdBu_r", vmin=-vmax, vmax=vmax)
-    plt.colorbar(im, label="LOS velocity (mm/yr)")
-    ax.set_title("PS-like masked mean LOS velocity")
+    plt.colorbar(im, label="Vertical velocity (mm/yr, +up)")
+    ax.set_title("PS-like masked mean vertical velocity")
     plt.tight_layout()
     out = out_dir / "velocity_map.png"
     plt.savefig(out, dpi=150, bbox_inches="tight")
@@ -84,8 +84,8 @@ def plot_selected_timeseries(exports_dir: Path, out_dir: Path, n_points: int):
                 marker="o", markersize=3, label=f"({r},{c})")
 
     ax.set_xlabel("Date")
-    ax.set_ylabel("Displacement (mm)")
-    ax.set_title(f"Selected PS-like point time series (n={len(chosen)})")
+    ax.set_ylabel("Vertical displacement (mm, +up)")
+    ax.set_title(f"Selected PS-like point vertical time series (n={len(chosen)})")
     ax.legend(fontsize=8)
     plt.tight_layout()
     out = out_dir / "selected_point_timeseries.png"
