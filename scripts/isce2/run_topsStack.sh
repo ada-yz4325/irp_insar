@@ -102,15 +102,12 @@ if [[ -d "$WORK_DIR/coreg_secondarys" ]] && [[ -n "$(ls -A "$WORK_DIR/coreg_seco
     fi
 fi
 
-# stackSentinel.py's --num_proc already bakes its own parallelism directly
-# into multi-line run_files: commands are batched in groups ending with `&`,
-# each batch followed by a `wait` line. Running each line independently
-# through `xargs -P` (as this script used to) breaks that batching — `wait`
-# becomes a no-op in its own subshell, and each `bash -c "CMD &"` exits the
-# instant it backgrounds CMD instead of waiting for it. That caused two
-# different failures (FileNotFoundError, then IndexError on empty output)
-# in earlier runs. Just run the file directly and let its own &/wait
-# structure do the parallelism.
+# stackSentinel.py's --num_proc bakes parallelism into run_files as batches
+# of `CMD &` lines each followed by a `wait`. But the LAST batch in a file
+# sometimes has no trailing `wait` (topsStack generator bug), so background
+# processes for the final pair of dates escape the subshell and race with
+# the next run_file. Fix: source each run_file inside a subshell and call
+# `wait` explicitly, guaranteeing all background jobs finish before moving on.
 echo "--- Executing run_files in order ---"
 for run_script in "$WORK_DIR"/run_files/run_*; do
     base=$(basename "$run_script")
@@ -120,7 +117,7 @@ for run_script in "$WORK_DIR"/run_files/run_*; do
     fi
     n_lines=$(wc -l < "$run_script")
     echo "--- Running: $run_script ($n_lines lines) ---"
-    bash "$run_script"
+    ( source "$run_script"; wait )
     sync
 done
 

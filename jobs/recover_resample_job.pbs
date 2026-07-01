@@ -1,0 +1,68 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=4:mem=16gb
+#PBS -l walltime=02:00:00
+#PBS -N recover_resample
+#PBS -o logs/recover_resample.out
+#PBS -e logs/recover_resample.err
+
+# Recovery job: redo geo2rdr + resample for the 2 dates that were orphaned
+# when run_09/run_10 exited without a trailing wait (20170107, 20170131).
+
+set -euo pipefail
+cd "$PBS_O_WORKDIR"
+
+source $HOME/miniconda3/etc/profile.d/conda.sh
+export ISCE_HOME="${ISCE_HOME:-}"
+export ISCE_STACK="${ISCE_STACK:-}"
+conda activate insar
+export ISCE_HOME=$HOME/miniconda3/envs/insar/lib/python3.10/site-packages/isce
+export TOPSSTACK=$HOME/isce2_contrib/contrib/stack/topsStack
+export PATH=$ISCE_HOME/bin:$ISCE_HOME/applications:$TOPSSTACK:$PATH
+export STACK_CONTRIB=$HOME/isce2_contrib/contrib/stack
+export PYTHONPATH=$ISCE_HOME:$STACK_CONTRIB:$PYTHONPATH
+
+WORK_DIR=/rds/general/user/yz4325/ephemeral/irp_insar/data/processed/isce2_chengdu
+
+echo "=== Recovery: geo2rdr + resample for 20170107, 20170131 ==="
+echo "Start: $(date)"
+
+# Remove partial outputs: incomplete geo2rdr IW3 burst-4 files (no .vrt/.xml)
+echo "--- Cleaning partial geo2rdr outputs ---"
+rm -f "$WORK_DIR/coreg_secondarys/20170107/IW3/azimuth_04.off"
+rm -f "$WORK_DIR/coreg_secondarys/20170107/IW3/range_04.off"
+rm -f "$WORK_DIR/coreg_secondarys/20170131/IW3/azimuth_04.off"
+rm -f "$WORK_DIR/coreg_secondarys/20170131/IW3/range_04.off"
+
+# Remove partial resample outputs: only burst_01.slc written for IW2 (no IW3 SLCs)
+echo "--- Cleaning partial resample outputs ---"
+rm -f "$WORK_DIR/coreg_secondarys/20170107/IW2/burst_01.slc"
+rm -f "$WORK_DIR/coreg_secondarys/20170131/IW2/burst_01.slc"
+
+cd "$WORK_DIR"
+
+echo "--- Running geo2rdr for 20170107 and 20170131 ---"
+SentinelWrapper.py -c configs/config_fullBurst_geo2rdr_20170107 &
+SentinelWrapper.py -c configs/config_fullBurst_geo2rdr_20170131 &
+wait
+echo "geo2rdr done: $(date)"
+
+echo "--- Running resample for 20170107 and 20170131 ---"
+SentinelWrapper.py -c configs/config_fullBurst_resample_20170107 &
+SentinelWrapper.py -c configs/config_fullBurst_resample_20170131 &
+wait
+echo "resample done: $(date)"
+
+echo "--- Verifying IW*.xml ---"
+for date in 20170107 20170131; do
+    for iw in IW2 IW3; do
+        f="$WORK_DIR/coreg_secondarys/$date/$iw.xml"
+        if [[ -f "$f" ]]; then
+            echo "OK: $date/$iw.xml"
+        else
+            echo "MISSING: $date/$iw.xml" >&2
+            exit 1
+        fi
+    done
+done
+
+echo "=== Recovery complete: $(date) ==="
