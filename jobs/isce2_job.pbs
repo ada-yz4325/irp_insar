@@ -21,6 +21,10 @@ export PATH=$ISCE_HOME/bin:$ISCE_HOME/applications:$TOPSSTACK:$PATH
 export STACK_CONTRIB=$HOME/isce2_contrib/contrib/stack
 export PYTHONPATH=$ISCE_HOME:$STACK_CONTRIB:$PYTHONPATH
 
+# Pass a city-specific config via: qsub -v ISCE2_CFG=configs/isce2/topsStack_chengdu.cfg
+ISCE2_CFG=${ISCE2_CFG:-configs/isce2/topsStack_template.cfg}
+
 echo "=== ISCE2 job start: $(date) ==="
-bash scripts/isce2/run_topsStack.sh configs/isce2/topsStack_template.cfg
+echo "Config: $ISCE2_CFG"
+bash scripts/isce2/run_topsStack.sh "$ISCE2_CFG"
 echo "=== ISCE2 job end: $(date) ==="

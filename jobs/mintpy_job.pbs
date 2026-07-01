@@ -18,8 +18,28 @@ export PATH=$ISCE_HOME/bin:$ISCE_HOME/applications:$TOPSSTACK:$PATH
 export STACK_CONTRIB=$HOME/isce2_contrib/contrib/stack
 export PYTHONPATH=$ISCE_HOME:$STACK_CONTRIB:$PYTHONPATH
 
+# Pass city-specific values via qsub -v, e.g.:
+#   qsub -v "MINTPY_TEMPLATE=configs/mintpy/smallbaselineApp_chengdu.cfg,\
+#             MINTPY_DIR=/rds/.../mintpy_outputs_chengdu,\
+#             ISCE_WORK_DIR=/rds/.../isce2_chengdu,\
+#             EXPORTS_DIR=exports_chengdu" jobs/mintpy_job.pbs
+MINTPY_TEMPLATE=${MINTPY_TEMPLATE:-configs/mintpy/smallbaselineApp_template.cfg}
+MINTPY_DIR=${MINTPY_DIR:-/rds/general/user/yz4325/ephemeral/irp_insar/data/mintpy_outputs_chengdu}
+ATMO_CONFIG=${ATMO_CONFIG:-configs/atmo_correction.yaml}
+ISCE_WORK_DIR=${ISCE_WORK_DIR:-/rds/general/user/yz4325/ephemeral/irp_insar/data/processed/isce2_chengdu}
+EXPORTS_DIR=${EXPORTS_DIR:-exports_chengdu}
+
+mkdir -p logs "$MINTPY_DIR" "$EXPORTS_DIR"
+
 echo "=== MintPy job start: $(date) ==="
+echo "Template  : $MINTPY_TEMPLATE"
+echo "MintPy dir: $MINTPY_DIR"
+echo "ISCE dir  : $ISCE_WORK_DIR"
+echo "Exports   : $EXPORTS_DIR"
 bash scripts/mintpy/run_mintpy.sh \
-    configs/mintpy/smallbaselineApp_template.cfg \
-    data/mintpy_outputs
+    "$MINTPY_TEMPLATE" \
+    "$MINTPY_DIR" \
+    "$ATMO_CONFIG" \
+    "$ISCE_WORK_DIR" \
+    "$EXPORTS_DIR"
 echo "=== MintPy job end: $(date) ==="
