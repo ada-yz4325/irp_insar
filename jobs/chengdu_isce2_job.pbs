@@ -1,0 +1,23 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=16:mem=96gb
+#PBS -l walltime=36:00:00
+#PBS -N chengdu_isce2
+#PBS -o logs/chengdu_isce2.out
+#PBS -e logs/chengdu_isce2.err
+
+set -eo pipefail
+cd "$PBS_O_WORKDIR"
+
+source $HOME/miniconda3/etc/profile.d/conda.sh
+export ISCE_HOME="${ISCE_HOME:-}"
+export ISCE_STACK="${ISCE_STACK:-}"
+conda activate insar
+export ISCE_HOME=$HOME/miniconda3/envs/insar/lib/python3.10/site-packages/isce
+export TOPSSTACK=$HOME/isce2_contrib/contrib/stack/topsStack
+export PATH=$ISCE_HOME/bin:$ISCE_HOME/applications:$TOPSSTACK:$PATH
+export STACK_CONTRIB=$HOME/isce2_contrib/contrib/stack
+export PYTHONPATH=$ISCE_HOME:$STACK_CONTRIB:$PYTHONPATH
+
+echo "=== Chengdu ISCE2 job start: $(date) ==="
+bash scripts/isce2/run_topsStack.sh configs/isce2/topsStack_template.cfg
+echo "=== Chengdu ISCE2 job end: $(date) ==="

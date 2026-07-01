@@ -1,0 +1,49 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=2:mem=8gb
+#PBS -l walltime=06:00:00
+#PBS -N chengdu_download
+#PBS -o logs/chengdu_download.out
+#PBS -e logs/chengdu_download.err
+
+set -eo pipefail
+cd "$PBS_O_WORKDIR"
+
+source $HOME/miniconda3/etc/profile.d/conda.sh
+conda activate insar
+
+SLC_DIR="/rds/general/user/yz4325/ephemeral/irp_insar/data/raw/slc_chengdu"
+DEM_DIR="/rds/general/user/yz4325/ephemeral/irp_insar/data/raw/dem_chengdu"
+ORBIT_DIR="/rds/general/user/yz4325/ephemeral/irp_insar/data/raw/orbits"
+
+mkdir -p "$SLC_DIR" "$DEM_DIR" logs
+
+echo "=== Chengdu download start: $(date) ==="
+
+# --- Step 1: SLC download (Path 128 / Frame 94 / 2015-2017) ---
+echo "--- Step 1: SLC scenes ---"
+python scripts/download/download_s1.py \
+    --config configs/download_config_chengdu.yml
+
+SLC_COUNT=$(ls "$SLC_DIR"/*.zip 2>/dev/null | wc -l)
+echo "SLC count: $SLC_COUNT"
+if [ "$SLC_COUNT" -eq 0 ]; then
+    echo "ERROR: No SLC files downloaded. Aborting." >&2
+    exit 1
+fi
+
+# --- Step 2: DEM for Chengdu bbox ---
+echo "--- Step 2: DEM (Chengdu bbox) ---"
+python scripts/isce2/download_dem.py \
+    --bbox 30.415 30.8289 103.7625 104.411 \
+    --out-dir "$DEM_DIR"
+
+# --- Step 3: Precise orbits for downloaded scenes ---
+echo "--- Step 3: Orbits ---"
+python scripts/isce2/download_orbits.py \
+    --slc-dir "$SLC_DIR" \
+    --out-dir "$ORBIT_DIR"
+
+echo "=== Chengdu download complete: $(date) ==="
+echo "SLC files : $(ls $SLC_DIR/*.zip | wc -l)"
+echo "DEM files : $(ls $DEM_DIR/ | head -5)"
+echo "Orbit files: $(ls $ORBIT_DIR/*.EOF 2>/dev/null | wc -l)"

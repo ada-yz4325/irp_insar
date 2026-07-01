@@ -1,0 +1,19 @@
+# Sentinel-1 SLC download config — Chengdu urban stack
+# Path 128 / Frame 94 / Ascending / VV / 2015-2017 (19 scenes)
+# Run: python scripts/download/download_s1.py --config configs/download_config_chengdu.yml
+
+aoi: "POLYGON((103.7625 30.415,104.411 30.415,104.411 30.8289,103.7625 30.8289,103.7625 30.415))"
+
+start: "2015-01-01"
+end:   "2017-12-31"
+
+track: 128
+frame: 94
+
+pass_dir: ASCENDING
+
+polarization: VV
+
+out_dir: /rds/general/user/yz4325/ephemeral/irp_insar/data/raw/slc_chengdu
+
+max_results: 300
