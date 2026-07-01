@@ -12,17 +12,15 @@
 # count/indices to metadata/resolved_burst_subset.yaml for the record.
 # ============================================================
 
-aoi_name: beijing_urban_core
+aoi_name: chengdu_urban_core
 
-# Target subswath for this validation stack (see configs/dataset.yaml)
-swath: IW1
+# Full IW mode — all sub-swaths covering the bbox are used.
+# topsStack selects the relevant sub-swaths and bursts automatically.
+swath: IW
 
-# Optional tight AOI clip "south north west east" in decimal degrees.
-# Blank = use the common overlap between all scenes in the stack, which
-# has already been verified to resolve to exactly one burst (burst_01)
-# in IW1 for this 57-scene stack. Set this if/when scaling to a larger
-# AOI that spans multiple bursts and only a subset should be kept.
-bbox: ""
+# Tight AOI clip "south north west east" — Chengdu city centre polygon.
+# Path 128, Frame 94. ~62 km E-W × 46 km N-S.
+bbox: "30.415 30.8289 103.7625 104.411"
 
 # Polarization for this validation pass
 polarization: VV

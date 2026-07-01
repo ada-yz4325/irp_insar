@@ -6,27 +6,27 @@
 # already-downloaded scenes (see scripts/isce2/check_stack_metadata.py).
 # ============================================================
 
-aoi_name: beijing_urban_core
+aoi_name: chengdu_urban_core
 
 # Relative orbit number (Sentinel-1 "track")
-relative_orbit: 69
+relative_orbit: 128
 
 # ASCENDING | DESCENDING — never mixed within a stack
 pass_direction: ASCENDING
 
-# Subswath in use for this validation stack (single-burst, single-swath
-# by design — see configs/burst_subset.yaml)
-swath: IW1
+# Full IW mode — all sub-swaths needed by the bbox are used; topsStack
+# selects the relevant sub-swaths and bursts automatically via the bbox
+# parameter. No single-swath restriction applied (unlike the single-burst
+# Beijing validation stack).
+swath: IW
 
 # Polarization — VV preferred for urban PS stability
 polarization: VV
 
-# Approximate footprint of the full SLC frame (south, north, west, east),
-# read from manifest.safe gml:coordinates of the first downloaded scene.
-# This is the FRAME footprint, not the single-burst footprint — the
-# tighter burst-level AOI is recorded in configs/burst_subset.yaml once
-# the stack has been built.
-frame_bbox_snwe: [39.706468, 40.028375, 116.274582, 117.363225]
+# AOI footprint (south, north, west, east) covering Chengdu city centre.
+# Path 128, Frame 94. Spans ~62 km E-W × 46 km N-S (~2844 km²).
+# Source: ASF Vertex search polygon, 19 scenes, 2015-2017.
+frame_bbox_snwe: [30.415, 30.8289, 103.7625, 104.411]
 
 # Sensor family observed in the stack (informational; mixed S1A/S1B is fine
 # as long as orbit/frame/direction/swath/polarization above match)
