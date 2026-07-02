@@ -1,0 +1,43 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=2:mem=16gb
+#PBS -l walltime=04:00:00
+#PBS -N recover_unwrap
+#PBS -o logs/recover_unwrap.out
+#PBS -e logs/recover_unwrap.err
+
+# Recovery job: re-unwrap the 6 pairs that were OOM-killed during the
+# parallel run_16 batch (8 simultaneous SNAPHU processes exhausted 32GB RAM).
+# Runs serially to stay within memory budget.
+
+set -euo pipefail
+cd "$PBS_O_WORKDIR"
+
+source $HOME/miniconda3/etc/profile.d/conda.sh
+export ISCE_HOME="${ISCE_HOME:-}"
+export ISCE_STACK="${ISCE_STACK:-}"
+export PYTHONPATH="${PYTHONPATH:-}"
+conda activate insar
+export ISCE_HOME=$HOME/miniconda3/envs/insar/lib/python3.10/site-packages/isce
+export TOPSSTACK=$HOME/isce2_contrib/contrib/stack/topsStack
+export PATH=$ISCE_HOME/bin:$ISCE_HOME/applications:$TOPSSTACK:$PATH
+export STACK_CONTRIB=$HOME/isce2_contrib/contrib/stack
+export PYTHONPATH=$ISCE_HOME:$STACK_CONTRIB:$PYTHONPATH
+
+WORK_DIR=/rds/general/user/yz4325/ephemeral/irp_insar/data/processed/isce2_chengdu
+CFG_DIR=$WORK_DIR/configs
+
+echo "=== Serial unwrap recovery: $(date) ==="
+
+for pair in 20160113_20160206 20160206_20160418 20160418_20160512 \
+            20160629_20160816 20160909_20161003 20161027_20161214; do
+    echo "--- Unwrapping $pair: $(date) ---"
+    SentinelWrapper.py -c "$CFG_DIR/config_igram_unw_${pair}"
+    if [[ -f "$WORK_DIR/merged/interferograms/$pair/filt_fine.unw" ]]; then
+        echo "OK: $pair filt_fine.unw written"
+    else
+        echo "FAILED: $pair filt_fine.unw not produced" >&2
+        exit 1
+    fi
+done
+
+echo "=== All 6 pairs unwrapped: $(date) ==="
