@@ -1,7 +1,8 @@
 #!/bin/bash
-#PBS -l select=1:ncpus=8:mem=32gb
-#PBS -l walltime=12:00:00
-#PBS -N mintpy_sbas
+#PBS -l select=1:ncpus=8:mem=64gb
+#PBS -l walltime=24:00:00
+#PBS -q v1_large72
+#PBS -N mintpy_psinsar
 #PBS -o logs/mintpy_job.out
 #PBS -e logs/mintpy_job.err
 
@@ -18,28 +19,35 @@ export PATH=$ISCE_HOME/bin:$ISCE_HOME/applications:$TOPSSTACK:$PATH
 export STACK_CONTRIB=$HOME/isce2_contrib/contrib/stack
 export PYTHONPATH=$ISCE_HOME:$STACK_CONTRIB:$PYTHONPATH
 
-# Pass city-specific values via qsub -v, e.g.:
-#   qsub -v "MINTPY_TEMPLATE=configs/mintpy/smallbaselineApp_chengdu.cfg,\
-#             MINTPY_DIR=/rds/.../mintpy_outputs_chengdu,\
-#             ISCE_WORK_DIR=/rds/.../isce2_chengdu,\
-#             EXPORTS_DIR=exports_chengdu" jobs/mintpy_job.pbs
-MINTPY_TEMPLATE=${MINTPY_TEMPLATE:-configs/mintpy/smallbaselineApp_template.cfg}
-MINTPY_DIR=${MINTPY_DIR:-/rds/general/user/yz4325/ephemeral/irp_insar/data/mintpy_outputs_chengdu}
+# Pass values via qsub -v, e.g.:
+#   qsub -v "MINTPY_TEMPLATE=configs/mintpy/smallbaselineApp_psinsar.cfg,\
+#             MINTPY_DIR=/rds/.../mintpy_outputs_psinsar,\
+#             ISCE_WORK_DIR=/rds/.../isce2_beijing_psinsar,\
+#             EXPORTS_DIR=exports_beijing_psinsar,\
+#             PIPELINE=psinsar" jobs/mintpy_job.pbs
+MINTPY_TEMPLATE=${MINTPY_TEMPLATE:-configs/mintpy/smallbaselineApp_psinsar.cfg}
+MINTPY_DIR=${MINTPY_DIR:-/rds/general/user/yz4325/ephemeral/irp_insar/data/mintpy_outputs_psinsar}
 ATMO_CONFIG=${ATMO_CONFIG:-configs/atmo_correction.yaml}
-ISCE_WORK_DIR=${ISCE_WORK_DIR:-/rds/general/user/yz4325/ephemeral/irp_insar/data/processed/isce2_chengdu}
-EXPORTS_DIR=${EXPORTS_DIR:-exports_chengdu}
+ISCE_WORK_DIR=${ISCE_WORK_DIR:-/rds/general/user/yz4325/ephemeral/irp_insar/data/processed/isce2_beijing_psinsar}
+EXPORTS_DIR=${EXPORTS_DIR:-exports_beijing_psinsar}
+PIPELINE=${PIPELINE:-psinsar}   # psinsar | sbas
 
 mkdir -p logs "$MINTPY_DIR" "$EXPORTS_DIR"
 
 echo "=== MintPy job start: $(date) ==="
+echo "Pipeline  : $PIPELINE"
 echo "Template  : $MINTPY_TEMPLATE"
 echo "MintPy dir: $MINTPY_DIR"
 echo "ISCE dir  : $ISCE_WORK_DIR"
 echo "Exports   : $EXPORTS_DIR"
-bash scripts/mintpy/run_mintpy.sh \
-    "$MINTPY_TEMPLATE" \
-    "$MINTPY_DIR" \
-    "$ATMO_CONFIG" \
-    "$ISCE_WORK_DIR" \
-    "$EXPORTS_DIR"
+
+if [[ "$PIPELINE" == "psinsar" ]]; then
+    bash scripts/mintpy/run_mintpy_psinsar.sh \
+        "$MINTPY_TEMPLATE" "$MINTPY_DIR" "$ATMO_CONFIG" \
+        "$ISCE_WORK_DIR"   "$EXPORTS_DIR"
+else
+    bash scripts/mintpy/run_mintpy.sh \
+        "$MINTPY_TEMPLATE" "$MINTPY_DIR" "$ATMO_CONFIG" \
+        "$ISCE_WORK_DIR"   "$EXPORTS_DIR"
+fi
 echo "=== MintPy job end: $(date) ==="
