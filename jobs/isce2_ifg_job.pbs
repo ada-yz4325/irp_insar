@@ -1,0 +1,44 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=8:mem=64gb
+#PBS -l walltime=72:00:00
+#PBS -q v1_large72
+#PBS -N isce2_ifg
+#PBS -o logs/isce2_ifg_job.out
+#PBS -e logs/isce2_ifg_job.err
+
+# Run only run_13–16 (interferogram generation, merge, filter, unwrap).
+# Preconditions: run_01–12 already complete (coreg_secondarys/, merged/SLC/ exist).
+
+set -eo pipefail
+cd "$PBS_O_WORKDIR"
+
+source $HOME/miniconda3/etc/profile.d/conda.sh
+export ISCE_HOME="${ISCE_HOME:-}"
+export ISCE_STACK="${ISCE_STACK:-}"
+conda activate insar
+export ISCE_HOME=$HOME/miniconda3/envs/insar/lib/python3.10/site-packages/isce
+export TOPSSTACK=$HOME/isce2_contrib/contrib/stack/topsStack
+export PATH=$ISCE_HOME/bin:$ISCE_HOME/applications:$TOPSSTACK:$PATH
+export STACK_CONTRIB=$HOME/isce2_contrib/contrib/stack
+export PYTHONPATH=$ISCE_HOME:$STACK_CONTRIB:$PYTHONPATH
+
+WORK_DIR=${WORK_DIR:-/rds/general/user/yz4325/ephemeral/irp_insar/data/processed/isce2_beijing_psinsar}
+
+echo "=== ISCE2 interferogram job start: $(date) ==="
+echo "Work dir: $WORK_DIR"
+echo "Running run_13–16 only (coreg already complete)"
+
+for step in 13 14 15 16; do
+    run_script=$(ls "$WORK_DIR/run_files/run_${step}_"* 2>/dev/null | head -1)
+    if [[ -z "$run_script" ]]; then
+        echo "ERROR: run_${step}_* not found in $WORK_DIR/run_files/"
+        exit 1
+    fi
+    n_lines=$(wc -l < "$run_script")
+    echo "--- Running: $(basename $run_script) ($n_lines lines) ---"
+    ( source "$run_script"; wait )
+    sync
+    echo "--- Done: $(basename $run_script) at $(date) ---"
+done
+
+echo "=== ISCE2 interferogram job end: $(date) ==="
