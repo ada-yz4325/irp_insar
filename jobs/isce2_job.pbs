@@ -1,6 +1,7 @@
 #!/bin/bash
-#PBS -l select=1:ncpus=8:mem=32gb
-#PBS -l walltime=36:00:00
+#PBS -l select=1:ncpus=8:mem=64gb
+#PBS -l walltime=72:00:00
+#PBS -q v1_large72
 #PBS -N isce2_topsStack
 #PBS -o logs/isce2_job.out
 #PBS -e logs/isce2_job.err
@@ -21,7 +22,8 @@ export PATH=$ISCE_HOME/bin:$ISCE_HOME/applications:$TOPSSTACK:$PATH
 export STACK_CONTRIB=$HOME/isce2_contrib/contrib/stack
 export PYTHONPATH=$ISCE_HOME:$STACK_CONTRIB:$PYTHONPATH
 
-# Pass a city-specific config via: qsub -v ISCE2_CFG=configs/isce2/topsStack_chengdu.cfg
+# Pass a city-specific config via:
+#   qsub -v "ISCE2_CFG=configs/isce2/topsStack_psinsar.cfg" jobs/isce2_job.pbs
 ISCE2_CFG=${ISCE2_CFG:-configs/isce2/topsStack_template.cfg}
 
 echo "=== ISCE2 job start: $(date) ==="
