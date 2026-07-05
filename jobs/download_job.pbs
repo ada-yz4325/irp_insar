@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -l select=1:ncpus=2:mem=8gb
-#PBS -l walltime=06:00:00
+#PBS -l walltime=12:00:00
 #PBS -N s1_download
 #PBS -o logs/download_job.out
 #PBS -e logs/download_job.err
