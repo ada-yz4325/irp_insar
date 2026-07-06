@@ -136,6 +136,11 @@ def main():
         outdir = os.path.join(os.path.dirname(workdir), 'mintpy_outputs_psinsar')
     os.makedirs(outdir, exist_ok=True)
 
+    outpath = os.path.join(outdir, 'adi_psinsar')
+    if os.path.exists(outpath + '.npy') and os.path.exists(outpath + '.tif'):
+        print(f"ADI already exists — skipping recompute: {outpath}.npy")
+        return
+
     print(f"ISCE2 workdir : {workdir}")
     print(f"Output dir    : {outdir}")
     print(f"Chunk rows    : {args.chunk_rows}")
@@ -163,7 +168,6 @@ def main():
     print(f"  ADI ≤ 0.56 (PS candidates): {ps_count:,}  "
           f"({100*ps_count/valid:.1f}% of valid)")
 
-    outpath = os.path.join(outdir, 'adi_psinsar')
     save_adi(adi, outpath, slc_files[0])
     print(f"\nSaved → {outpath}.npy  and  {outpath}.tif")
     print("\nNext: run build_ps_mask_psinsar.py to combine ADI with temporalCoherence.")
