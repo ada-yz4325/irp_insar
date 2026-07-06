@@ -24,20 +24,38 @@ import numpy as np
 import pandas as pd
 
 
-def load_timeseries(ts_path: str, mask: np.ndarray):
+def load_timeseries(ts_path: str, mask: np.ndarray, max_points: int = 50000):
+    rows, cols = np.where(mask)
+    n_ps = len(rows)
+
+    if n_ps > max_points:
+        rng = np.random.default_rng(42)
+        idx = np.sort(rng.choice(n_ps, size=max_points, replace=False))
+        rows, cols = rows[idx], cols[idx]
+        print(f"  Subsampled {n_ps:,} → {max_points:,} PS points")
+
+    n_ps = len(rows)
     with h5py.File(ts_path, "r") as f:
         dates = [d.decode() for d in f["date"][:]]
-        ts = f["timeseries"][:]          # (n_dates, rows, cols) in metres
+        n_dates = len(dates)
+        # Read one 2D date slice (~31 MB each) then extract PS pixels;
+        # avoids loading the full 1.9 GB array and h5py sorted-index constraint
+        ts_ps = np.empty((n_dates, n_ps), dtype=np.float32)
+        for i in range(n_dates):
+            ts_ps[i] = f["timeseries"][i][rows, cols]
 
-    rows, cols = np.where(mask)
+    # Build long-format DataFrame with vectorised ops (no Python dict loop)
+    row_rep = np.repeat(rows, n_dates)
+    col_rep = np.repeat(cols, n_dates)
+    date_rep = np.tile(dates, n_ps)
+    disp_flat = (ts_ps.T.ravel() * 1000.0).astype(np.float32)  # m → mm
 
-    records = []
-    for r, c in zip(rows, cols):
-        pixel_ts = ts[:, r, c] * 1000    # m → mm
-        for date, val in zip(dates, pixel_ts):
-            records.append({"row": r, "col": c, "date": date, "displacement_mm": val})
-
-    return pd.DataFrame(records)
+    return pd.DataFrame({
+        "row": row_rep,
+        "col": col_rep,
+        "date": date_rep,
+        "displacement_mm": disp_flat,
+    })
 
 
 def main():
@@ -61,7 +79,7 @@ def main():
         raise SystemExit("Must provide either --mask or --coh")
 
     print(f"Loading time series from {args.ts}")
-    df = load_timeseries(args.ts, mask)
+    df = load_timeseries(args.ts, mask, max_points=50000)
     n_pixels = df[["row", "col"]].drop_duplicates().shape[0] if len(df) else 0
     print(f"Pixels after mask: {n_pixels}")
 

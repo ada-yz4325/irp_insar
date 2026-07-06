@@ -24,6 +24,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--mintpy-dir", required=True, help="MintPy work dir")
     ap.add_argument("--out", required=True, help="Output .geojson path")
+    ap.add_argument("--mask", default=None,
+                    help="PS mask HDF5 (default: <mintpy-dir>/masks/mask_ps_like.h5)")
     ap.add_argument(
         "--max-points", type=int, default=None,
         help="Optional cap on number of points written (evenly subsampled)",
@@ -31,7 +33,7 @@ def main():
     args = ap.parse_args()
 
     mintpy_dir = Path(args.mintpy_dir)
-    mask_file = mintpy_dir / "masks" / "mask_ps_like.h5"
+    mask_file = Path(args.mask) if args.mask else mintpy_dir / "masks" / "mask_ps_like.h5"
     geom_file = mintpy_dir / "inputs" / "geometryRadar.h5"
     velocity_file = mintpy_dir / "velocity_vertical.h5"
     std_file = mintpy_dir / "velocity_std_vertical.h5"

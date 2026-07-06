@@ -100,6 +100,8 @@ def main():
     ap.add_argument("--exports-dir", required=True)
     ap.add_argument("--out-dir", default="figures")
     ap.add_argument("--n-points", type=int, default=5)
+    ap.add_argument("--mask", default=None,
+                    help="PS mask HDF5 (default: <mintpy-dir>/masks/mask_ps_like.h5)")
     args = ap.parse_args()
 
     mintpy_dir = Path(args.mintpy_dir)
@@ -107,7 +109,7 @@ def main():
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    mask_file = mintpy_dir / "masks" / "mask_ps_like.h5"
+    mask_file = Path(args.mask) if args.mask else mintpy_dir / "masks" / "mask_ps_like.h5"
     if not mask_file.exists():
         sys.exit(f"Missing {mask_file} -- has Stage 10 run yet?")
     mask, _ = readfile.read(str(mask_file))

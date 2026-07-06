@@ -107,11 +107,14 @@ python3 "$SCRIPT_DIR/export_timeseries.py" \
     --mask "$WORK_DIR/mask_ps_psinsar.h5" \
     --out  "$EXPORTS_DIR/timeseries_points.csv"
 python3 "$SCRIPT_DIR/export_ps_points_geojson.py" \
-    --mintpy-dir "$WORK_DIR" \
+    --mintpy-dir  "$WORK_DIR" \
+    --mask        "$WORK_DIR/mask_ps_psinsar.h5" \
+    --max-points  100000 \
     --out "$EXPORTS_DIR/ps_like_points.geojson"
 python3 "$SCRIPT_DIR/../utils/plot_pipeline_results.py" \
     --mintpy-dir  "$WORK_DIR" \
     --exports-dir "$EXPORTS_DIR" \
+    --mask        "$WORK_DIR/mask_ps_psinsar.h5" \
     --out-dir     "$SCRIPT_DIR/../../figures"
 
 echo "=== PS-InSAR pipeline complete: $(date) ==="
