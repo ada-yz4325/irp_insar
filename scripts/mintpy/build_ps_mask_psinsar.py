@@ -57,10 +57,22 @@ def main():
     print(f"  shape: {tc.shape}  ACC ≥ {args.acc_thr}: "
           f"{np.sum(tc >= args.acc_thr):,} pixels")
 
-    # --- Spatial alignment check ---
+    # --- Spatial alignment: resample ADI to MintPy multilooked grid if needed ---
     if adi.shape != tc.shape:
-        sys.exit(f"ERROR: Shape mismatch — ADI {adi.shape} vs temporalCoherence {tc.shape}\n"
-                 f"       Ensure compute_adi_psinsar.py and MintPy used the same ISCE2 workdir.")
+        r_factor = round(adi.shape[0] / tc.shape[0])
+        c_factor = round(adi.shape[1] / tc.shape[1])
+        if r_factor < 1 or c_factor < 1:
+            sys.exit(f"ERROR: Shape mismatch — ADI {adi.shape} vs temporalCoherence {tc.shape}\n"
+                     f"       ADI is smaller than TC; ensure compute_adi_psinsar.py used the "
+                     f"full ISCE2 workdir (not a subset).")
+        # Crop to exact multiple, then block-minimum to preserve best PS candidates
+        adi_crop = adi[:tc.shape[0] * r_factor, :tc.shape[1] * c_factor]
+        adi = np.nanmin(
+            adi_crop.reshape(tc.shape[0], r_factor, tc.shape[1], c_factor),
+            axis=(1, 3)
+        )
+        print(f"  Resampled ADI {adi_crop.shape} → {adi.shape} "
+              f"(block-min, {r_factor}×{c_factor} looks)")
 
     # --- Build dual-condition mask ---
     mask_adi = (adi <= args.adi_thr)
