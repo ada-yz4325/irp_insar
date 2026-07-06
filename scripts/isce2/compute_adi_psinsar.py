@@ -38,13 +38,19 @@ def parse_args():
 
 
 def find_slc_files(workdir):
-    """Return sorted list of merged SLC paths: merged/SLC/YYYYMMDD/YYYYMMDD.slc"""
-    pattern = os.path.join(workdir, 'merged', 'SLC', '*', '*.slc')
-    files = sorted(glob.glob(pattern))
-    if not files:
+    """Return sorted list of merged SLC base paths (without .vrt suffix).
+
+    topsStack writes merged SLCs as *.slc.full.vrt (GDAL virtual datasets
+    pointing to the per-burst coregistered SLCs).  We match those VRTs and
+    strip the trailing .vrt so callers can do slc_path + '.vrt' consistently.
+    """
+    pattern = os.path.join(workdir, 'merged', 'SLC', '*', '*.slc.full.vrt')
+    vrts = sorted(glob.glob(pattern))
+    if not vrts:
         sys.exit(f"ERROR: No merged SLC files found under {workdir}/merged/SLC/\n"
                  f"       Run ISCE2 topsStack through the merge step first.")
-    return files
+    # Strip .vrt → base path is e.g. .../merged/SLC/20161003/20161003.slc.full
+    return [v[:-4] for v in vrts]
 
 
 def read_slc_header(slc_path):
