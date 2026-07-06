@@ -33,11 +33,13 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--mintpy-dir", required=True, help="MintPy work dir")
     ap.add_argument("--out-dir", required=True, help="exports/ directory for velocity.tif")
+    ap.add_argument("--mask", default=None,
+                    help="PS mask HDF5 (default: <mintpy-dir>/masks/mask_ps_like.h5)")
     args = ap.parse_args()
 
     mintpy_dir = Path(args.mintpy_dir)
     velocity_file = mintpy_dir / "velocity_vertical.h5"
-    mask_file = mintpy_dir / "masks" / "mask_ps_like.h5"
+    mask_file = Path(args.mask) if args.mask else mintpy_dir / "masks" / "mask_ps_like.h5"
     geom_file = mintpy_dir / "inputs" / "geometryRadar.h5"
     geo_dir = mintpy_dir / "geo"
     out_dir = Path(args.out_dir)
