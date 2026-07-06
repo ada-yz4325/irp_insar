@@ -1,0 +1,34 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=8:mem=64gb
+#PBS -l walltime=02:00:00
+#PBS -q v1_large72
+#PBS -N mintpy_reref
+#PBS -o logs/mintpy_reref_job.out
+#PBS -e logs/mintpy_reref_job.err
+
+# Lightweight re-reference + deramp job.
+# Does NOT re-run load_data / invert_network / ERA5 — skips straight to
+# re-referencing the existing timeseries.h5, then deramp → velocity → export.
+# Expected walltime: ~20–30 min.
+
+set -eo pipefail
+cd "$PBS_O_WORKDIR"
+
+source $HOME/miniconda3/etc/profile.d/conda.sh
+conda activate insar
+export ISCE_HOME=$HOME/miniconda3/envs/insar/lib/python3.10/site-packages/isce
+export TOPSSTACK=$HOME/isce2_contrib/contrib/stack/topsStack
+export PATH=$ISCE_HOME/bin:$ISCE_HOME/applications:$TOPSSTACK:$PATH
+export STACK_CONTRIB=$HOME/isce2_contrib/contrib/stack
+export PYTHONPATH=$ISCE_HOME:$STACK_CONTRIB:$PYTHONPATH
+
+MINTPY_TEMPLATE=${MINTPY_TEMPLATE:-configs/mintpy/smallbaselineApp_psinsar.cfg}
+MINTPY_DIR=${MINTPY_DIR:-/rds/general/user/yz4325/ephemeral/irp_insar/data/mintpy_outputs_psinsar}
+EXPORTS_DIR=${EXPORTS_DIR:-exports_beijing_psinsar}
+
+mkdir -p logs "$EXPORTS_DIR"
+
+echo "=== mintpy_reref job start: $(date) ==="
+bash scripts/mintpy/run_reref_psinsar.sh \
+    "$MINTPY_TEMPLATE" "$MINTPY_DIR" "$EXPORTS_DIR"
+echo "=== mintpy_reref job end: $(date) ==="
