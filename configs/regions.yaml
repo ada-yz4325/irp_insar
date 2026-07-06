@@ -1,0 +1,40 @@
+# Geographic region definitions for spatial subset selection.
+# Used by scripts/utils/define_subset.py
+#
+# Format:
+#   lat: [min, max]   # degrees North
+#   lon: [min, max]   # degrees East
+#   desc: "human-readable description"
+#
+# Usage:
+#   python scripts/utils/define_subset.py --region beijing_plain
+#   python scripts/utils/define_subset.py --list
+
+# ── Beijing ──────────────────────────────────────────────────────────────────
+
+beijing_plain:
+  lat: [39.55, 40.45]
+  lon: [115.75, 117.20]
+  desc: "Beijing plain — full study area in Zhou et al. 2024 (RS 16(9) 1528)"
+
+beijing_paper_aoi:
+  lat: [39.55, 40.15]
+  lon: [115.80, 117.20]
+  desc: "Paper AOI clipped to our SLC coverage (drops Yanqing/Huairou/Miyun mountains)"
+
+beijing_5ring:
+  lat: [39.75, 40.05]
+  lon: [116.20, 116.65]
+  desc: "Beijing 5th ring road inner area (主城区核心)"
+
+beijing_tongzhou_chaoyang:
+  lat: [39.75, 40.10]
+  lon: [116.35, 116.90]
+  desc: "TZSC typical subregion from Fig. 7a of Zhou et al. 2024"
+
+# ── Chengdu ──────────────────────────────────────────────────────────────────
+
+chengdu_plain:
+  lat: [30.40, 30.84]
+  lon: [103.76, 104.42]
+  desc: "Chengdu urban plain (existing Chengdu pipeline AOI)"
