@@ -35,7 +35,7 @@ def parse_args():
     p.add_argument('--outdir',   default=os.path.join(REPO_ROOT, 'figures'))
     p.add_argument('--vmin',     type=float, default=-20)
     p.add_argument('--vmax',     type=float, default=20)
-    p.add_argument('--cmap',     default='jet')
+    p.add_argument('--cmap',     default='jet_r')
     p.add_argument('--dpi',      type=int, default=200)
     p.add_argument('--decimate', type=int, default=2)
     return p.parse_args()
