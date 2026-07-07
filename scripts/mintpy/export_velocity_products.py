@@ -69,7 +69,10 @@ def main():
     if not geo_velocity.exists():
         geocode.main([str(velocity_file), "-l", str(geom_file), "--outdir", str(geo_dir)])
 
-    geo_mask = geo_dir / "geo_mask_ps_like.h5"
+    # MintPy geocode names the output file after the input basename, not a fixed name.
+    # Derive the expected geocoded mask filename from the input mask file.
+    geo_mask_name = "geo_" + mask_file.name
+    geo_mask = geo_dir / geo_mask_name
     if not geo_mask.exists():
         geocode.main([str(mask_file), "-l", str(geom_file), "--outdir", str(geo_dir)])
 
