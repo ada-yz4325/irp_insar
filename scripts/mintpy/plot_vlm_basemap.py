@@ -38,6 +38,11 @@ def parse_args():
     p.add_argument('--cmap',     default='jet_r')
     p.add_argument('--dpi',      type=int, default=200)
     p.add_argument('--decimate', type=int, default=2)
+    p.add_argument('--period',   default=None,
+                   help='Time period string appended to title, e.g. "Oct 2016 – Dec 2018"')
+    p.add_argument('--outname',  default=None,
+                   help='Override output filename (without directory). '
+                        'Default: vlm_over_basemap_<label>.png')
     return p.parse_args()
 
 def main():
@@ -108,10 +113,12 @@ def main():
     cbar.set_label('Vertical Vel. (mm/yr)', fontsize=12, rotation=270, labelpad=20)
     cbar.ax.tick_params(labelsize=10)
 
-    ax.set_title(f'Vertical Land Motion — {args.label}  (Sentinel-1, SBAS+PS-like)',
+    period_str = f'  [{args.period}]' if args.period else ''
+    ax.set_title(f'Vertical Land Motion — {args.label}{period_str}  (Sentinel-1, SBAS+PS-like)',
                  fontsize=13, pad=10)
 
-    out = os.path.join(args.outdir, f'vlm_over_basemap_{args.label}.png')
+    fname = args.outname if args.outname else f'vlm_over_basemap_{args.label}.png'
+    out = os.path.join(args.outdir, fname)
     plt.tight_layout()
     plt.savefig(out, dpi=args.dpi, bbox_inches='tight')
     print(f"Saved → {out}")
