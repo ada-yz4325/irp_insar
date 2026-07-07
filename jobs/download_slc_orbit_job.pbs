@@ -1,0 +1,45 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=4:mem=16gb
+#PBS -l walltime=20:00:00
+#PBS -N slc_orbit_download
+#PBS -o logs/download_slc_orbit.out
+#PBS -e logs/download_slc_orbit.err
+#
+# Download SLC files only (no DEM — reuse existing) + orbit files.
+# Usage:
+#   qsub -v "DOWNLOAD_CONFIG=configs/download_config_beijing_2019_2021.yml,\
+#             SLC_DIR=/path/to/slc,ORBIT_DIR=/path/to/orbits" \
+#        jobs/download_slc_orbit_job.pbs
+
+set -eo pipefail
+cd "$PBS_O_WORKDIR"
+
+source $HOME/miniconda3/etc/profile.d/conda.sh
+conda activate insar
+
+DOWNLOAD_CONFIG=${DOWNLOAD_CONFIG:-configs/download_config_beijing_2019_2021.yml}
+SLC_DIR=${SLC_DIR:-/rds/general/ephemeral/user/yz4325/ephemeral/irp_insar/data/raw/slc_beijing_psinsar}
+ORBIT_DIR=${ORBIT_DIR:-/rds/general/ephemeral/user/yz4325/ephemeral/irp_insar/data/raw/orbits}
+
+mkdir -p "$SLC_DIR" "$ORBIT_DIR" logs
+
+echo "=== SLC+Orbit download start: $(date) ==="
+echo "Config   : $DOWNLOAD_CONFIG"
+echo "SLC dir  : $SLC_DIR"
+echo "Orbit dir: $ORBIT_DIR"
+
+SLC_BEFORE=$(ls "$SLC_DIR"/*.zip 2>/dev/null | wc -l)
+echo "SLC before: $SLC_BEFORE"
+
+echo "--- Step 1: Download SLCs ---"
+python scripts/download/download_s1.py --config "$DOWNLOAD_CONFIG"
+
+SLC_AFTER=$(ls "$SLC_DIR"/*.zip 2>/dev/null | wc -l)
+echo "SLC after : $SLC_AFTER  (downloaded $((SLC_AFTER - SLC_BEFORE)) new)"
+
+echo "--- Step 2: Download orbit files ---"
+python scripts/isce2/download_orbits.py --slc-dir "$SLC_DIR" --out-dir "$ORBIT_DIR"
+
+echo "=== Download complete: $(date) ==="
+echo "Total SLC   : $(ls $SLC_DIR/*.zip | wc -l)"
+echo "Total orbits: $(ls $ORBIT_DIR/*.EOF 2>/dev/null | wc -l)"

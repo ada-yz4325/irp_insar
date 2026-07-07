@@ -1,0 +1,17 @@
+# Sentinel-1 SLC download — Beijing extension 2019-2021
+# Extends existing stack (2016-2018, 65 scenes) with 55 new S1B scenes.
+# Track 47 descending, IW2 subswath used for processing.
+# S1B only: S1A does not acquire Track 47; data gap exists 2022-2024.
+
+aoi: "POINT(116.3 39.9)"
+
+start: "2019-01-01"
+end:   "2021-12-31"
+
+track: 47
+pass_dir: DESCENDING
+polarization: VV+VH
+
+out_dir: /rds/general/ephemeral/user/yz4325/ephemeral/irp_insar/data/raw/slc_beijing_psinsar
+
+max_results: 200
