@@ -1,0 +1,35 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=4:mem=32gb
+#PBS -l walltime=02:00:00
+#PBS -q v1_small72a
+#PBS -N extract_subperiod
+#PBS -o logs/extract_subperiod.out
+#PBS -e logs/extract_subperiod.err
+
+set -eo pipefail
+cd "$PBS_O_WORKDIR"
+source $HOME/miniconda3/etc/profile.d/conda.sh
+conda activate insar
+export ISCE_HOME=$HOME/miniconda3/envs/insar/lib/python3.10/site-packages/isce
+export PATH=$ISCE_HOME/bin:$ISCE_HOME/applications:$PATH
+
+MDIR=/rds/general/ephemeral/user/yz4325/ephemeral/irp_insar/data/processed/mintpy_outputs_iw2_2016_2021
+
+echo "=== Sub-period velocity extraction: $(date) ==="
+python3 scripts/mintpy/extract_subperiod_velocities.py \
+    --mintpy-dir "$MDIR" \
+    --mask mask_ps_psinsar.h5 \
+    --out-dir exports_beijing_iw2_2016_2021 \
+    --periods 20161003:20191231:2016-2019 \
+              20200101:20211130:2020-2021 \
+              20161003:20211130:2016-2021
+
+echo "=== Extraction done: $(date) ==="
+echo "=== Generating three VLM maps ==="
+python3 scripts/mintpy/generate_three_vlm_maps.py \
+    --exports-dir exports_beijing_iw2_2016_2021 \
+    --bbox "115.80 116.52 39.65 40.10" \
+    --outdir figures \
+    --dpi 200
+
+echo "=== All three maps generated: $(date) ==="
