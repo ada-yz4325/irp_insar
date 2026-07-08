@@ -110,8 +110,19 @@ def add_north_arrow(ax):
             path_effects=[pe.Stroke(linewidth=2, foreground='black'), pe.Normal()])
 
 
+# Chinese → English/pinyin district name lookup (Beijing 16 districts)
+_DIST_NAMES = {
+    '东城区': 'Dongcheng', '西城区': 'Xicheng', '朝阳区': 'Chaoyang',
+    '丰台区': 'Fengtai',   '石景山区': 'Shijingshan', '海淀区': 'Haidian',
+    '门头沟区': 'Mentougou', '房山区': 'Fangshan',   '通州区': 'Tongzhou',
+    '顺义区': 'Shunyi',    '昌平区': 'Changping',   '大兴区': 'Daxing',
+    '怀柔区': 'Huairou',   '平谷区': 'Pinggu',      '密云区': 'Miyun',
+    '延庆区': 'Yanqing',
+}
+
+
 def add_admin_boundaries(ax, bbox):
-    """Overlay Beijing district boundaries from local GeoJSON."""
+    """Overlay Beijing district boundaries from local GeoJSON with English labels."""
     if not ADMIN_JSON.exists():
         print(f'  Admin GeoJSON not found at {ADMIN_JSON} — skipping')
         return
@@ -123,19 +134,19 @@ def add_admin_boundaries(ax, bbox):
         if gdf_clip.empty:
             print('  No districts in AOI bbox — skipping')
             return
-        gdf_clip.boundary.plot(ax=ax, color='white', linewidth=0.8, alpha=0.7,
+        gdf_clip.boundary.plot(ax=ax, color='white', linewidth=0.8, alpha=0.75,
                                path_effects=[pe.Stroke(linewidth=1.6, foreground='black', alpha=0.5),
                                              pe.Normal()])
-        # Label the largest districts inside the view
+        # Label districts whose centroid is inside the view
         for _, row in gdf_clip.iterrows():
             cx, cy = row.geometry.centroid.x, row.geometry.centroid.y
             if lon_min < cx < lon_max and lat_min < cy < lat_max:
-                name = row.get('name', '')
-                if name:
-                    ax.text(cx, cy, name, ha='center', va='center', fontsize=6.5,
-                            color='white', alpha=0.9,
-                            path_effects=[pe.Stroke(linewidth=1.5, foreground='black', alpha=0.6),
-                                          pe.Normal()])
+                cn_name = row.get('name', '')
+                label   = _DIST_NAMES.get(cn_name, cn_name)
+                ax.text(cx, cy, label, ha='center', va='center', fontsize=6.5,
+                        color='white', alpha=0.92, fontweight='bold',
+                        path_effects=[pe.Stroke(linewidth=1.8, foreground='black', alpha=0.6),
+                                      pe.Normal()])
         print(f'  Added {len(gdf_clip)} district boundaries')
     except Exception as e:
         print(f'  Admin boundary error: {e}')

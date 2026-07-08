@@ -68,4 +68,13 @@ python3 scripts/mintpy/generate_three_vlm_maps.py \
     --filter 3
 
 echo "=== Maps complete: $(date) ==="
+
+echo ""
+echo "=== Generating velocity profile transects: $(date) ==="
+python3 scripts/mintpy/plot_velocity_profiles.py \
+    --exports-dir "$EDIR" \
+    --outdir figures \
+    --dpi 250
+
+echo "=== Profile transects done: $(date) ==="
 echo "ENHANCED_DONE"
