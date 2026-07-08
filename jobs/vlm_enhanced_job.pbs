@@ -1,0 +1,71 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=4:mem=32gb
+#PBS -l walltime=03:00:00
+#PBS -q v1_small72a
+#PBS -N vlm_enhanced
+#PBS -o logs/vlm_enhanced.out
+#PBS -e logs/vlm_enhanced.err
+
+# Enhanced VLM pipeline:
+#   1. Re-extract velocities with DS-relaxed mask (TC>=0.60) + per-period std filter
+#   2. Generate paper-quality maps (RdYlBu_r, spatial filter, district overlay)
+# Estimated runtime: ~90 min (geocoding dominates)
+
+set -eo pipefail
+cd "$PBS_O_WORKDIR"
+source $HOME/miniconda3/etc/profile.d/conda.sh
+conda activate insar
+export ISCE_HOME=$HOME/miniconda3/envs/insar/lib/python3.10/site-packages/isce
+export PATH=$ISCE_HOME/bin:$ISCE_HOME/applications:$PATH
+
+MDIR=/rds/general/ephemeral/user/yz4325/ephemeral/irp_insar/data/processed/mintpy_outputs_iw2_2016_2021
+EDIR=exports_beijing_iw2_2016_2021
+
+echo "=== Enhanced VLM extraction start: $(date) ==="
+
+# Remove cached combined masks so they are rebuilt with the new DS+std logic
+rm -f "$MDIR"/mask_combined_*.h5
+# Remove cached geocoded combined masks
+rm -f "$MDIR"/geo/geo_mask_combined_*.h5
+
+python3 scripts/mintpy/extract_subperiod_velocities.py \
+    --mintpy-dir "$MDIR" \
+    --mask       mask_ps_psinsar.h5 \
+    --out-dir    "$EDIR" \
+    --ds-thr     0.60 \
+    --periods \
+        20161003:20191231:2016-2019:6 \
+        20200101:20211130:2020-2021:20 \
+        20161003:20211130:2016-2021:5
+
+echo "=== Extraction done: $(date) ==="
+echo ""
+
+# Quick velocity statistics for QA
+python3 -c "
+import rasterio, numpy as np, sys
+edir = '$EDIR'
+for lbl in ['2016-2019', '2020-2021', '2016-2021']:
+    with rasterio.open(f'{edir}/velocity_{lbl}.tif') as s:
+        v = s.read(1).astype(float)
+        nd = s.nodata
+    if nd is not None: v[v==nd] = float('nan')
+    v[v==0] = float('nan')
+    vm = v * 1000
+    n = int(np.sum(np.isfinite(vm)))
+    p2,med,p98 = np.nanpercentile(vm,2), np.nanmedian(vm), np.nanpercentile(vm,98)
+    print(f'{lbl}: n={n:,}  p2={p2:.1f}  med={med:.1f}  p98={p98:.1f} mm/yr')
+"
+
+echo ""
+echo "=== Generating paper-quality VLM maps: $(date) ==="
+
+python3 scripts/mintpy/generate_three_vlm_maps.py \
+    --exports-dir "$EDIR" \
+    --bbox   "115.80 116.52 39.65 40.10" \
+    --outdir figures \
+    --dpi    300 \
+    --filter 3
+
+echo "=== Maps complete: $(date) ==="
+echo "ENHANCED_DONE"
