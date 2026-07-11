@@ -66,7 +66,7 @@ def main():
             '--period',  period_str,
             '--vmin',    str(vmin),
             '--vmax',    str(vmax),
-            '--cmap',    'RdYlBu_r',
+            '--cmap',    'RdYlBu',
             '--filter',  str(args.filter),
             '--dpi',     str(args.dpi),
             '--outdir',  args.outdir,

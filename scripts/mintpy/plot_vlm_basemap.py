@@ -4,7 +4,7 @@ Paper-quality VLM basemap plot over ESRI satellite imagery.
 
 Features:
   - Spatial 3x3 median filter to suppress salt-and-pepper noise
-  - RdYlBu_r diverging colormap (blue=stable, red=subsiding)
+  - RdYlBu diverging colormap (red=subsiding, blue=uplift/stable)
   - Beijing district boundary overlay (data/admin/beijing_districts.json)
   - Manual scale bar and north arrow
   - Per-point velocity uncertainty masking (--std-tif)
@@ -41,7 +41,7 @@ ADMIN_JSON = REPO_ROOT / 'data' / 'admin' / 'beijing_districts.json'
 # ── Custom colormap: white at 0, blue toward positive, red toward negative ──
 def make_vlm_cmap():
     """Diverging colormap tuned for InSAR VLM (mostly negative values)."""
-    return plt.get_cmap('RdYlBu_r')
+    return plt.get_cmap('RdYlBu')
 
 
 def parse_args():
@@ -64,7 +64,7 @@ def parse_args():
                    help='LON_MIN LON_MAX LAT_MIN LAT_MAX — display window')
     p.add_argument('--vmin',     type=float, default=-30)
     p.add_argument('--vmax',     type=float, default=5)
-    p.add_argument('--cmap',     default='RdYlBu_r')
+    p.add_argument('--cmap',     default='RdYlBu')
     p.add_argument('--filter',   type=int, default=3,
                    help='Spatial median-filter kernel size in raster pixels (default 3, set 1 to disable)')
     p.add_argument('--decimate', type=int, default=2,
@@ -72,6 +72,11 @@ def parse_args():
     p.add_argument('--dpi',      type=int, default=250)
     p.add_argument('--no-admin', action='store_true',
                    help='Skip Beijing district boundary overlay')
+    p.add_argument('--subtitle', default='Sentinel-1 SBAS+PS',
+                   help='Second title line, e.g. "Sentinel-1 IW1 SBAS+PS+DS" (default: "Sentinel-1 SBAS+PS")')
+    p.add_argument('--ref-desc', default='reference point',
+                   help='Short description of the reference point for the footer annotation, '
+                        'e.g. "connected-component-validated point, 39.821N 116.509E"')
     return p.parse_args()
 
 
@@ -137,10 +142,17 @@ def add_admin_boundaries(ax, bbox):
         gdf_clip.boundary.plot(ax=ax, color='white', linewidth=0.8, alpha=0.75,
                                path_effects=[pe.Stroke(linewidth=1.6, foreground='black', alpha=0.5),
                                              pe.Normal()])
-        # Label districts whose centroid is inside the view
+        # Label districts whose centroid is inside the view. Skip labels that
+        # would land within min_sep of an already-placed one (e.g. tiny,
+        # adjacent Xicheng/Dongcheng otherwise print on top of each other).
+        min_sep = 0.10 * (lon_max - lon_min)
+        placed = []
         for _, row in gdf_clip.iterrows():
             cx, cy = row.geometry.centroid.x, row.geometry.centroid.y
             if lon_min < cx < lon_max and lat_min < cy < lat_max:
+                if any(((cx - px) ** 2 + (cy - py) ** 2) ** 0.5 < min_sep for px, py in placed):
+                    continue
+                placed.append((cx, cy))
                 cn_name = row.get('name', '')
                 label   = _DIST_NAMES.get(cn_name, cn_name)
                 ax.text(cx, cy, label, ha='center', va='center', fontsize=6.5,
@@ -279,13 +291,13 @@ def main():
     period_str = f'  [{args.period}]' if args.period else ''
     ax.set_title(
         f'Vertical Land Motion — {args.label}{period_str}\n'
-        f'Sentinel-1 IW2 SBAS+PS  ·  n={n_pts:,} pts',
+        f'{args.subtitle}  ·  n={n_pts:,} pts',
         fontsize=12, pad=8
     )
 
     # ── Data-source annotation ────────────────────────────────────────────────
     ax.text(0.01, 0.01,
-            'InSAR: Sentinel-1 | Processing: ISCE2+MintPy | Ref: western bedrock',
+            f'InSAR: Sentinel-1 | Processing: ISCE2+MintPy | Ref: {args.ref_desc}',
             transform=ax.transAxes, fontsize=6, color='white', alpha=0.8,
             path_effects=[pe.Stroke(linewidth=1.5, foreground='black', alpha=0.5),
                           pe.Normal()],
