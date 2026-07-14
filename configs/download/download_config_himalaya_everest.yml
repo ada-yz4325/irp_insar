@@ -1,0 +1,20 @@
+# Sentinel-1 SLC download config — Himalaya / Everest (Qomolangma) region
+#
+# Track 19, Frame 497, Descending — 100% AOI coverage confirmed via ASF search
+# 2014-2017 data too sparse (gaps up to 1092 days) -- stack starts 2020-03-21
+# where routine 12-day repeat begins (S1A alone, no S1B dependency)
+
+aoi: "POLYGON((83.6967 28.2255,84.9545 28.2255,84.9545 29.0051,83.6967 29.0051,83.6967 28.2255))"
+
+start: "2020-03-21"
+end:   "2026-07-11"
+
+track: 19
+frame: 497
+
+pass_dir:     DESCENDING
+polarization: VV+VH
+
+out_dir: /rds/general/ephemeral/user/yz4325/ephemeral/irp_insar/data/raw/slc_himalaya_everest
+
+max_results: 300

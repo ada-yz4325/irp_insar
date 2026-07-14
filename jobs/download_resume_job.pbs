@@ -1,0 +1,56 @@
+#!/bin/bash
+#PBS -l select=1:ncpus=2:mem=8gb
+#PBS -l walltime=12:00:00
+#PBS -N s1_download_resume
+#PBS -o logs/download_resume_job.out
+#PBS -e logs/download_resume_job.err
+#
+# Resumable variant of download_job.pbs -- retries missing/truncated SLC
+# scenes in rounds instead of dying on the first transient SSL error, then
+# does DEM + orbits same as the plain job. Safe to rerun: skips scenes
+# already present at a plausible complete size.
+#
+#   qsub -v "DOWNLOAD_CONFIG=configs/download/download_config_himalaya_everest.yml,\
+#             DEM_BBOX='28.10 29.10 83.60 85.05',\
+#             DEM_DIR=/rds/general/user/yz4325/ephemeral/irp_insar/data/raw/dem_himalaya_everest,\
+#             SLC_DIR=/rds/general/user/yz4325/ephemeral/irp_insar/data/raw/slc_himalaya_everest,\
+#             ORBIT_DIR=/rds/general/user/yz4325/ephemeral/irp_insar/data/raw/orbits" \
+#          jobs/download_resume_job.pbs
+
+set -eo pipefail
+cd "$PBS_O_WORKDIR"
+
+source $HOME/miniconda3/etc/profile.d/conda.sh
+conda activate insar
+
+DOWNLOAD_CONFIG=${DOWNLOAD_CONFIG:-configs/download_config_chengdu.yml}
+SLC_DIR=${SLC_DIR:-/rds/general/user/yz4325/ephemeral/irp_insar/data/raw/slc_chengdu}
+DEM_DIR=${DEM_DIR:-/rds/general/user/yz4325/ephemeral/irp_insar/data/raw/dem_chengdu}
+DEM_BBOX=${DEM_BBOX:-30.415 30.8289 103.7625 104.411}
+ORBIT_DIR=${ORBIT_DIR:-/rds/general/user/yz4325/ephemeral/irp_insar/data/raw/orbits}
+
+mkdir -p "$SLC_DIR" "$DEM_DIR" logs
+
+echo "=== Resumable download job start: $(date) ==="
+echo "Config    : $DOWNLOAD_CONFIG"
+echo "SLC dir   : $SLC_DIR"
+echo "DEM dir   : $DEM_DIR"
+echo "DEM bbox  : $DEM_BBOX"
+echo "Orbit dir : $ORBIT_DIR"
+
+echo "--- Step 1: SLC (resumable, retries missing/truncated) ---"
+python scripts/download/resume_download_s1.py --config "$DOWNLOAD_CONFIG" --rounds 6
+
+SLC_COUNT=$(ls "$SLC_DIR"/*.zip 2>/dev/null | wc -l)
+echo "SLC count: $SLC_COUNT"
+[ "$SLC_COUNT" -eq 0 ] && { echo "ERROR: No SLC files downloaded."; exit 1; }
+
+echo "--- Step 2: DEM ---"
+python scripts/isce2/download_dem.py --bbox $DEM_BBOX --out-dir "$DEM_DIR"
+
+echo "--- Step 3: Orbits ---"
+python scripts/isce2/download_orbits.py --slc-dir "$SLC_DIR" --out-dir "$ORBIT_DIR"
+
+echo "=== Download complete: $(date) ==="
+echo "SLC : $(ls $SLC_DIR/*.zip | wc -l) files"
+echo "Orbits: $(ls $ORBIT_DIR/*.EOF 2>/dev/null | wc -l) files"
